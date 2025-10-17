@@ -22,7 +22,7 @@ public class Wall : IEntity
 {
     public static Wall Create() => new Wall();
 
-    public void OnEnter() { throw new Exception("You shouldn't move onto walls"); }
+    public void OnEnter() { throw new Exception("You shouldn't be able to move onto walls"); }
 }
 
 
@@ -31,6 +31,16 @@ public class Spike : IEntity
 {
     public static Spike Create() => new Spike();
 
+    public void OnEnter()
+    {
+        throw new NotImplementedException();
+    }
+}
+
+/// <summary>A marker indicating danger, will turn into a Spike during the next turn.</summary>
+public class Danger : IEntity
+{
+    public static Danger Create() => new Danger();
     public void OnEnter()
     {
         throw new NotImplementedException();
