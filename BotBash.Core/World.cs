@@ -27,7 +27,7 @@ public class World
         var RNG = new Random();
         var Weight = 20; //% chance
 
-        if (RNG.Next(1, 101) < Weight) //1 - 100 RNG
+        if (RNG.Next(1, 101) <= Weight) //1 - 100 RNG
         {
             return Wall.Create();
         }
