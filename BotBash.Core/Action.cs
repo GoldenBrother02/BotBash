@@ -1,3 +1,5 @@
+namespace BotBash.Core;
+
 public enum ActionType
 {
     Move,

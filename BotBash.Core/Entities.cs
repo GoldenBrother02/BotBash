@@ -1,6 +1,5 @@
 namespace BotBash.Core;
 
-
 /// <summary>Defines what entity currently occupies a Cell.</summary>
 public interface IEntity
 {

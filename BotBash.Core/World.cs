@@ -1,6 +1,4 @@
-﻿using Microsoft.VisualBasic;
-
-namespace BotBash.Core;
+﻿namespace BotBash.Core;
 
 /// <summary>The board on which a game will take place.</summary>
 public class World
@@ -27,7 +25,7 @@ public class World
     private static IEntity Randomise()
     {
         var RNG = new Random();
-        var Weight = 20;  //% chance
+        var Weight = 20; //% chance
 
         if (RNG.Next(1, 101) < Weight) //1 - 100 RNG
         {
