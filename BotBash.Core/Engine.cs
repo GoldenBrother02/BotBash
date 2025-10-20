@@ -63,9 +63,9 @@ public class Engine
 
     private void BotDecisions()  //saving bot decisions to run in order later.
     {
-        foreach (var Bot in AlivePlayers)
+        foreach (var bot in AlivePlayers)
         {
-            BotActions.Add(Bot, Bot.RunLogic());
+            BotActions.Add(bot, bot.RunLogic());
         }
     }
 
@@ -74,28 +74,28 @@ public class Engine
         var NewPositions = new Dictionary<IBot, (int x, int y)>();
         var ToKill = new List<IBot>();
 
-        foreach (var Bot in AlivePlayers)
+        foreach (var bot in AlivePlayers)
         {
-            var Decision = BotActions[Bot];
+            var Decision = BotActions[bot];
             if (Decision.Type is ActionType.Move)
             {
-                var NextPos = Bot.Position.Add(Decision.Direction!.Value); //should never be null for a Move action thx to validation
-                NewPositions.Add(Bot, NextPos);
+                var NextPos = bot.Position.Add(Decision.Direction!.Value);
+                NewPositions.Add(bot, NextPos);
             }
         }
 
-        foreach (var Pos in NewPositions.ToList()) //iterate over a copy
+        foreach (var pos in NewPositions.ToList()) //iterate over a copy
         {
-            var Location = GameWorld.Layout[Pos.Value].Construct;
+            var Location = GameWorld.Layout[pos.Value].Construct;
 
             if (Location is Wall)
             {
-                NewPositions[Pos.Key] = Pos.Key.Position; //bot stays in place if hitting wall
+                NewPositions[pos.Key] = pos.Key.Position; //bot stays in place if hitting wall
             }
 
             if (Location is Spike)
             {
-                ToKill.Add(Pos.Key);
+                ToKill.Add(pos.Key);
             }
         }
 
@@ -106,19 +106,17 @@ public class Engine
 
         ToKill.AddRange(DuplicateBots);
 
-        foreach (var Dead in ToKill.Distinct()) //Don't delete bots that might have been added twice cus that'd error
+        foreach (var dead in ToKill.Distinct()) //Don't delete bots that might have been added twice cus that'd error
         {
-            AlivePlayers.Remove(Dead);
-            NewPositions.Remove(Dead);
+            AlivePlayers.Remove(dead);
+            NewPositions.Remove(dead);
         }
 
         foreach (var (bot, newPos) in NewPositions)
         {
-            GameWorld.Layout[bot.Position].Player = null; //old = empty
-
-            bot.Position = newPos; //update pos
-
-            GameWorld.Layout[newPos].Player = bot; //new = used
+            GameWorld.Layout[bot.Position].Player = null;
+            bot.Position = newPos;
+            GameWorld.Layout[newPos].Player = bot;
         }
 
         //not sure how to do their view yet but may need to update it here
@@ -142,8 +140,13 @@ public class Engine
 
         foreach (var danger in DangerCells)
         {
-            GameWorld.Layout[danger.Key].Construct = Spike.Create();
-            //if bot on danger tile, which turned into spike, kill them
+            GameWorld.Layout[danger.Key].Construct = Spike.Create(); //Danger => Spike
+
+            if (GameWorld.Layout[danger.Key].Player != null) //Kill Bots on new Spike
+            {
+                AlivePlayers.Remove(GameWorld.Layout[danger.Key].Player!);
+                GameWorld.Layout[danger.Key].Player = null;
+            }
         }
 
         if (HazardCountdown == 0)

@@ -22,7 +22,7 @@ public class World
                   .ToDictionary(k => (k.x, k.y), v => new Cell(null!, Randomise()));
     }
 
-    private static IEntity Randomise()
+    private static IEntity Randomise() //Current rando will create scenarios where players cannot reach eachother
     {
         var RNG = new Random();
         var Weight = 20; //% chance
