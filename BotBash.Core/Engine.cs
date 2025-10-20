@@ -128,6 +128,7 @@ public class Engine
         var Bashers = new Dictionary<IBot, (int x, int y)>();
         var Lungers = new Dictionary<IBot, (int x, int y)>();
         var Bashed = new Dictionary<IBot, (int x, int y)>(); //Basher Bashed Target
+        //Probably can merge Lungers and Bashers, but I don't feel like it rn
         var ToKill = new List<IBot>();
 
         foreach (var bot in AlivePlayers)
