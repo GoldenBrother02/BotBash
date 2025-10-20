@@ -3,7 +3,7 @@ namespace BotBash.Core;
 /// <summary>The Bot implementation, defines minimum Bot functionality.</summary>
 public interface IBot
 {
-    (int, int) Position { get; set; }
+    (int x, int y) Position { get; set; }
 
     Action RunLogic();
     Action Move();
