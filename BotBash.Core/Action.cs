@@ -24,6 +24,7 @@ public class Action
             Direction = (0, 0); //I could also check if direction still has a value and throw error but that seems unnecessary
             return;
         }
+
         else if (direction.HasValue)
         {
             var (x, y) = direction.Value;

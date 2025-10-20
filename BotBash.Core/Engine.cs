@@ -1,3 +1,5 @@
+using System.Security.Cryptography.X509Certificates;
+
 namespace BotBash.Core;
 
 public enum GameState
@@ -35,6 +37,7 @@ public class Engine
             BotBashes();
             WorldEdits();
             VictoryCheck();
+            BotActions.Clear();
         }
 
         if (State is GameState.Victory) { }
@@ -54,6 +57,7 @@ public class Engine
         for (int i = 0; i < AlivePlayers.Count; i++)
         {
             GameWorld.Layout[RandomCells[i].Key].Player = AlivePlayers[i];
+            AlivePlayers[i].Position = RandomCells[i].Key;
         }
     }
 
@@ -67,11 +71,57 @@ public class Engine
 
     private void BotMovement()
     {
-        /*
-        2 bots moving to the same tile causes them both to explode
-        not sure how to do their view yet but may need to update it here
-        lunge, despite moving, does not get updated here
-        */
+        var NewPositions = new Dictionary<IBot, (int x, int y)>();
+        var ToKill = new List<IBot>();
+
+        foreach (var Bot in AlivePlayers)
+        {
+            var Decision = BotActions[Bot];
+            if (Decision.Type is ActionType.Move)
+            {
+                var NextPos = Bot.Position.Add(Decision.Direction!.Value); //should never be null for a Move action thx to validation
+                NewPositions.Add(Bot, NextPos);
+            }
+        }
+
+        foreach (var Pos in NewPositions.ToList()) //iterate over a copy
+        {
+            var Location = GameWorld.Layout[Pos.Value].Construct;
+
+            if (Location is Wall)
+            {
+                NewPositions[Pos.Key] = Pos.Key.Position; //bot stays in place if hitting wall
+            }
+
+            if (Location is Spike)
+            {
+                ToKill.Add(Pos.Key);
+            }
+        }
+
+        var DuplicateBots = NewPositions.GroupBy(entry => entry.Value)
+                                        .Where(duplicates => duplicates.Count() > 1)
+                                        .SelectMany(bots => bots.Select(key => key.Key))
+                                        .ToList();
+
+        ToKill.AddRange(DuplicateBots);
+
+        foreach (var Dead in ToKill.Distinct()) //Don't delete bots that might have been added twice cus that'd error
+        {
+            AlivePlayers.Remove(Dead);
+            NewPositions.Remove(Dead);
+        }
+
+        foreach (var (bot, newPos) in NewPositions)
+        {
+            GameWorld.Layout[bot.Position].Player = null; //old = empty
+
+            bot.Position = newPos; //update pos
+
+            GameWorld.Layout[newPos].Player = bot; //new = used
+        }
+
+        //not sure how to do their view yet but may need to update it here
     }
 
     private void BotBashes()
@@ -93,6 +143,7 @@ public class Engine
         foreach (var danger in DangerCells)
         {
             GameWorld.Layout[danger.Key].Construct = Spike.Create();
+            //if bot on danger tile, which turned into spike, kill them
         }
 
         if (HazardCountdown == 0)
@@ -119,7 +170,7 @@ public class Engine
         }
         if (AlivePlayers.Count == 0)
         {
-            State = GameState.Victory;
+            State = GameState.Draw;
         }
     }
 }
