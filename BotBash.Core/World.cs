@@ -16,8 +16,8 @@ public class World
 
     public void InitialiseRandom()
     {
-        Layout = (from x in Enumerable.Range(0, Width)
-                  from y in Enumerable.Range(0, Height)
+        Layout = (from x in Enumerable.Range(1, Width)
+                  from y in Enumerable.Range(1, Height)
                   select new { x, y })
                   .ToDictionary(k => (k.x, k.y), v => new Cell(null!, Randomise()));
     }
@@ -97,5 +97,56 @@ public class World
             return Wall.Create();
         }
         return Empty.Create();
+    }
+
+    public bool IsInBounds((int x, int y) pos)
+    => pos.x >= 1 && pos.x <= Width && pos.y >= 1 && pos.y <= Height;
+
+    public void RenderWorld()
+    {
+        //Reset cursor to top-left
+        Console.SetCursorPosition(0, 0);
+
+        //Frame counter
+        Console.WriteLine("=== WORLD STATE ===");
+        Console.WriteLine();
+
+        int minX = Layout.Keys.Min(p => p.x);
+        int maxX = Layout.Keys.Max(p => p.x);
+        int minY = Layout.Keys.Min(p => p.y);
+        int maxY = Layout.Keys.Max(p => p.y);
+
+        for (int y = minY; y <= maxY; y++)
+        {
+            for (int x = minX; x <= maxX; x++)
+            {
+                var pos = (x, y);
+                if (!Layout.ContainsKey(pos))
+                {
+                    Console.Write("  ");
+                    continue;
+                }
+
+                var cell = Layout[pos];
+                char symbol = cell.Construct switch
+                {
+                    Wall => '#',
+                    Spike => 'S',
+                    Danger => 'D',
+                    Empty => '.',
+                    _ => '?'
+                };
+
+                if (cell.Player != null)
+                    symbol = 'P';
+
+                Console.Write(symbol + " ");
+            }
+            Console.WriteLine();
+        }
+
+        Console.WriteLine();
+        Console.Out.Flush();
+        Thread.Sleep(250); //delay between frames
     }
 }

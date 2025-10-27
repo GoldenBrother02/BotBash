@@ -30,6 +30,7 @@ public class Engine
     public void Start()
     {
         InitialiseGame();
+        Console.Clear();
 
         while (State is GameState.Playing)
         {
@@ -38,12 +39,25 @@ public class Engine
             BotBashes();
             WorldEdits();
             BotScan();
+
+            foreach (var kvp in GameWorld.Layout) //sanity check, still needed for proper rendering but idk why
+            //nvm, even this doesn't work 100% of the time
+            {
+                if (kvp.Value.Player != null && !AlivePlayers.Contains(kvp.Value.Player))
+                    kvp.Value.Player = null;
+            }
+            GameWorld.RenderWorld();
+
             VictoryCheck();
             BotActions.Clear();
+
+            Console.WriteLine($"Alive players: {AlivePlayers.Count}");
+
+            //every IsInBounds check needs to be redone, just a quick fix for demo purposes
         }
 
-        if (State is GameState.Victory) { } // *_*-*[TODO]*-*_*
-        if (State is GameState.Draw) { } //    *_*-*[TODO]*-*_*
+        if (State is GameState.Victory) { Console.WriteLine("Winner"); } // *_-_x*[TODO]*x_-_*
+        if (State is GameState.Draw) { Console.WriteLine("Draw"); } //    *_-_x*[TODO]*x_-_*
     }
 
     private void InitialiseGame()
@@ -93,16 +107,19 @@ public class Engine
 
         foreach (var pos in NewPositions.ToList()) //iterate over a copy
         {
-            var Location = GameWorld.Layout[pos.Value].Construct;
-
-            if (Location is Wall)
+            if (GameWorld.IsInBounds(pos.Value))
             {
-                NewPositions[pos.Key] = pos.Key.Position; //bot stays in place if hitting wall
-            }
+                var Location = GameWorld.Layout[pos.Value].Construct;
 
-            if (Location is Spike)
-            {
-                ToKill.Add(pos.Key);
+                if (Location is Wall)
+                {
+                    NewPositions[pos.Key] = pos.Key.Position; //bot stays in place if hitting wall
+                }
+
+                if (Location is Spike)
+                {
+                    ToKill.Add(pos.Key);
+                }
             }
         }
 
@@ -121,9 +138,12 @@ public class Engine
 
         foreach (var (bot, newPos) in NewPositions)
         {
-            GameWorld.Layout[bot.Position].Player = null;
-            bot.Position = newPos;
-            GameWorld.Layout[newPos].Player = bot;
+            if (GameWorld.IsInBounds(newPos))
+            {
+                GameWorld.Layout[bot.Position].Player = null;
+                bot.Position = newPos;
+                GameWorld.Layout[newPos].Player = bot;
+            }
         }
     }
 
@@ -166,8 +186,11 @@ public class Engine
             for (int i = 1; i <= Movement; i++) //this is very similar to Bonk so might refactor at some point
             {
                 var NextPos = (bot.Key.Position.x + bot.Value.x * i, bot.Key.Position.y + bot.Value.y * i);
-                if (GameWorld.Layout[NextPos].Construct is Wall) { break; } //your nose on the wall
-                EndPos = NextPos;
+                if (GameWorld.IsInBounds(NextPos))
+                {
+                    if (GameWorld.Layout[NextPos].Construct is Wall) { break; } //your nose on the wall
+                    EndPos = NextPos;
+                }
             }
 
             if (GameWorld.Layout[EndPos].Construct is Spike) //can jump over spikes, but not land on them
@@ -208,9 +231,12 @@ public class Engine
 
         foreach (var (_, attack) in Bashed.ToList()) //copy for safety
         {
-            if (GameWorld.Layout[attack].Player != null)
+            if (GameWorld.IsInBounds(attack))
             {
-                ToKill.Add(GameWorld.Layout[attack].Player!);
+                if (GameWorld.Layout[attack].Player != null)
+                {
+                    ToKill.Add(GameWorld.Layout[attack].Player!);
+                }
             }
         }
 
@@ -320,8 +346,12 @@ public class Engine
 
     private void Kill(IBot bot)
     {
-        if (!AlivePlayers.Remove(bot)) return;
-        if (GameWorld.Layout.ContainsKey(bot.Position))
+        if (GameWorld.Layout.ContainsKey(bot.Position) &&
+            GameWorld.Layout[bot.Position].Player == bot)
+        {
             GameWorld.Layout[bot.Position].Player = null;
+        }
+
+        AlivePlayers.Remove(bot);
     }
 }

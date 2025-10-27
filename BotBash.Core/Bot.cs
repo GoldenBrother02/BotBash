@@ -25,7 +25,7 @@ public class TestBot : IBot
 
     public Action RunLogic(HashSet<(int x, int y)> VisibleArea)
     {
-        return Wait();
+        return RandomAction();
         //is called by the engine, runs whatever logic the player makes, and returns an action
     }
 
@@ -52,5 +52,33 @@ public class TestBot : IBot
     public Action Wait()
     {
         return new Action(ActionType.Wait, (0, 0));
+    }
+
+    private Action RandomAction()
+    {
+        var RNG = new Random();
+        var value = RNG.Next(1, 6);
+
+        var directions = new (int x, int y)[]
+        {(1, 0), (-1, 0), (0, 1), (0, -1)};
+
+        var randomDirection = directions[RNG.Next(directions.Length)];
+
+
+        switch (value)
+        {
+            case 1:
+                return Move(randomDirection);
+            case 2:
+                return Bash(randomDirection);
+            case 3:
+                return Lunge(randomDirection);
+            case 4:
+                return Scan();
+            case 5:
+                return Wait();
+            default:
+                return Wait();
+        }
     }
 }
