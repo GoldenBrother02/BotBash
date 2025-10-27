@@ -1,10 +1,7 @@
 namespace BotBash.Core;
 
 /// <summary>Defines what entity currently occupies a Cell.</summary>
-public interface IEntity
-{
-
-}
+public interface IEntity { }
 
 /// <summary>An empty area, nothing.</summary>
 public class Empty : IEntity
@@ -17,7 +14,6 @@ public class Wall : IEntity
 {
     public static Wall Create() => new Wall();
 }
-
 
 /// <summary>A spike, kills a Bot that walks over it, designed to shrink the playable area over time and resolve stalemates.</summary>
 public class Spike : IEntity

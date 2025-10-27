@@ -36,15 +36,14 @@ public class Engine
             BotDecisions();
             BotMovement();
             BotBashes();
-            //not sure how to do their view yet but may need to update it here
             WorldEdits();
+            BotScan();
             VictoryCheck();
             BotActions.Clear();
-            //still gotta add the scan logic somewhere
         }
 
         if (State is GameState.Victory) { } // *_*-*[TODO]*-*_*
-        if (State is GameState.Draw) { } // *_*-*[TODO]*-*_*
+        if (State is GameState.Draw) { } //    *_*-*[TODO]*-*_*
     }
 
     private void InitialiseGame()
@@ -61,6 +60,10 @@ public class Engine
         {
             GameWorld.Layout[RandomCells[i].Key].Player = AlivePlayers[i];
             AlivePlayers[i].Position = RandomCells[i].Key;
+
+            AlivePlayers[i].Vision = 1;
+            AlivePlayers[i].ScanCooldown = 0;
+            AlivePlayers[i].LungeCooldown = 0;
         }
     }
 
@@ -68,7 +71,8 @@ public class Engine
     {
         foreach (var bot in AlivePlayers)
         {
-            BotActions.Add(bot, bot.RunLogic());
+            var VisibleArea = GameWorld.GetVisibleArea(bot.Position, bot.Vision);
+            BotActions.Add(bot, bot.RunLogic(VisibleArea));
         }
     }
 
@@ -142,7 +146,9 @@ public class Engine
 
             if (Decision.Type is ActionType.Lunge)
             {
+                if (bot.LungeCooldown != 0) { continue; }
                 Lungers.Add(bot, Decision.Direction!.Value);
+                bot.LungeCooldown = 3; //2 turn cooldown
             }
         }
 
@@ -160,10 +166,7 @@ public class Engine
             for (int i = 1; i <= Movement; i++) //this is very similar to Bonk so might refactor at some point
             {
                 var NextPos = (bot.Key.Position.x + bot.Value.x * i, bot.Key.Position.y + bot.Value.y * i);
-                if (GameWorld.Layout[NextPos].Construct is Wall)
-                {
-                    break; //your nose on the wall
-                }
+                if (GameWorld.Layout[NextPos].Construct is Wall) { break; } //your nose on the wall
                 EndPos = NextPos;
             }
 
@@ -247,8 +250,29 @@ public class Engine
         }
     }
 
+    private void BotScan()
+    {
+        foreach (var bot in AlivePlayers)
+        {
+            var Decision = BotActions[bot];
+            if (Decision.Type is ActionType.Scan && bot.ScanCooldown == 0)
+            {
+                bot.Vision = 5;
+                bot.ScanCooldown = 2;  //1 turn cooldown
+            }
+        }
+    }
+
     private void VictoryCheck() //victory if you're the last bot alive, draw if you both died same turn aka 0 Bots alive
     {
+        foreach (var bot in AlivePlayers)
+        {
+            //resets vision each turn, move to render function when making display later
+            bot.ScanCooldown -= 1;
+            bot.LungeCooldown = Math.Max(0, bot.LungeCooldown - 1);
+            if (bot.ScanCooldown == 0) { bot.Vision = 1; }
+        }
+
         if (AlivePlayers.Count == 1)
         {
             State = GameState.Victory;
@@ -270,12 +294,10 @@ public class Engine
         for (int i = 1; i <= movement; i++)
         {
             var NextPos = (bot.Position.x + Knockback.Item1 * i, bot.Position.y + Knockback.Item2 * i);
-            if (!GameWorld.Layout.ContainsKey(NextPos)) break; //prevent OoB
+            if (!GameWorld.Layout.ContainsKey(NextPos)) { break; } //prevent OoB
 
-            if (GameWorld.Layout[NextPos].Construct is Wall)
-            {
-                break; //your nose on the wall
-            }
+            if (GameWorld.Layout[NextPos].Construct is Wall) { break; } //your nose on the wall
+
             EndPos = NextPos;
         }
 
