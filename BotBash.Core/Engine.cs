@@ -40,24 +40,26 @@ public class Engine
             WorldEdits();
             BotScan();
 
-            foreach (var kvp in GameWorld.Layout) //sanity check, still needed for proper rendering but idk why
-            //nvm, even this doesn't work 100% of the time
-            {
-                if (kvp.Value.Player != null && !AlivePlayers.Contains(kvp.Value.Player))
-                    kvp.Value.Player = null;
-            }
             GameWorld.RenderWorld();
 
             VictoryCheck();
             BotActions.Clear();
 
             Console.WriteLine($"Alive players: {AlivePlayers.Count}");
-
-            //every IsInBounds check needs to be redone, just a quick fix for demo purposes
         }
 
         if (State is GameState.Victory) { Console.WriteLine("Winner"); } // *_-_x*[TODO]*x_-_*
-        if (State is GameState.Draw) { Console.WriteLine("Draw"); } //    *_-_x*[TODO]*x_-_*
+        if (State is GameState.Draw) { Console.WriteLine("Draw"); } //      *_-_x*[TODO]*x_-_*
+
+        /*      //sanity check
+                foreach (var kvp in GameWorld.Layout)
+                {
+                    if (kvp.Value.Player != null)
+                    {
+                        Console.WriteLine($"Tile {kvp.Key} has player {kvp.Value.Player.GetHashCode()}");
+                    }
+                }
+        */
     }
 
     private void InitialiseGame()
@@ -72,8 +74,7 @@ public class Engine
 
         for (int i = 0; i < AlivePlayers.Count; i++)
         {
-            GameWorld.Layout[RandomCells[i].Key].Player = AlivePlayers[i];
-            AlivePlayers[i].Position = RandomCells[i].Key;
+            MoveBotToTile(AlivePlayers[i], RandomCells[i].Key);
 
             AlivePlayers[i].Vision = 1;
             AlivePlayers[i].ScanCooldown = 0;
@@ -81,7 +82,7 @@ public class Engine
         }
     }
 
-    private void BotDecisions()  //saving bot decisions to run in order later.
+    private void BotDecisions()
     {
         foreach (var bot in AlivePlayers)
         {
@@ -107,16 +108,14 @@ public class Engine
 
         foreach (var pos in NewPositions.ToList()) //iterate over a copy
         {
-            if (GameWorld.IsInBounds(pos.Value))
+            if (TryGetCell(pos.Value, out var cell))
             {
-                var Location = GameWorld.Layout[pos.Value].Construct;
-
-                if (Location is Wall)
+                if (cell.Construct is Wall)
                 {
                     NewPositions[pos.Key] = pos.Key.Position; //bot stays in place if hitting wall
                 }
 
-                if (Location is Spike)
+                if (cell.Construct is Spike)
                 {
                     ToKill.Add(pos.Key);
                 }
@@ -140,19 +139,14 @@ public class Engine
         {
             if (GameWorld.IsInBounds(newPos))
             {
-                GameWorld.Layout[bot.Position].Player = null;
-                bot.Position = newPos;
-                GameWorld.Layout[newPos].Player = bot;
+                MoveBotToTile(bot, newPos);
             }
         }
     }
 
     private void BotBashes()
     {
-        var Bashers = new Dictionary<IBot, (int x, int y)>();
-        var Lungers = new Dictionary<IBot, (int x, int y)>();
         var Bashed = new Dictionary<IBot, (int x, int y)>(); //Basher Bashed Target
-        //Probably can merge Lungers and Bashers, but I don't feel like it rn
         var ToKill = new List<IBot>();
 
         foreach (var bot in AlivePlayers)
@@ -161,52 +155,15 @@ public class Engine
 
             if (Decision.Type is ActionType.Bash)
             {
-                Bashers.Add(bot, Decision.Direction!.Value);
+                DoBash(bot, Decision, Bashed);
             }
 
             if (Decision.Type is ActionType.Lunge)
             {
                 if (bot.LungeCooldown != 0) { continue; }
-                Lungers.Add(bot, Decision.Direction!.Value);
+                DoLunge(bot, Decision, Bashed, ToKill);
                 bot.LungeCooldown = 3; //2 turn cooldown
             }
-        }
-
-        foreach (var bot in Bashers)
-        {
-            var BashedCell = bot.Key.Position.Add(bot.Value);
-            Bashed.Add(bot.Key, BashedCell); //Basher Bashed Target
-        }
-
-        foreach (var bot in Lungers)
-        {
-            int Movement = 1; //how far Lunge lunges
-            var EndPos = bot.Key.Position;
-
-            for (int i = 1; i <= Movement; i++) //this is very similar to Bonk so might refactor at some point
-            {
-                var NextPos = (bot.Key.Position.x + bot.Value.x * i, bot.Key.Position.y + bot.Value.y * i);
-                if (GameWorld.IsInBounds(NextPos))
-                {
-                    if (GameWorld.Layout[NextPos].Construct is Wall) { break; } //your nose on the wall
-                    EndPos = NextPos;
-                }
-            }
-
-            if (GameWorld.Layout[EndPos].Construct is Spike) //can jump over spikes, but not land on them
-            {
-                ToKill.Add(bot.Key);
-            }
-
-            if (GameWorld.Layout[EndPos].Player != null)
-            {
-                ToKill.Add(bot.Key);
-                ToKill.Add(GameWorld.Layout[EndPos].Player!);
-            }
-
-            bot.Key.Position = EndPos; //update position
-            var BashedCell = EndPos.Add(bot.Value); //Bash after Lunge movement
-            Bashed.Add(bot.Key, BashedCell); //Basher Bashed Target
         }
 
         var HitEachother = Bashed.SelectMany(pair =>  //Pair up A bashing B with B bashing A
@@ -221,26 +178,29 @@ public class Engine
 
         foreach (var (basher, target) in HitEachother)
         {
-            Bonk(basher, GetIntent(basher, Bashers, Lungers), 2);
-            Bonk(target, GetIntent(target, Bashers, Lungers), 2);
+            if (!AlivePlayers.Contains(basher) || !AlivePlayers.Contains(target)) { continue; }
+
+            Bonk(basher, BotActions[basher].Direction!.Value, 2);
+            Bonk(target, BotActions[target].Direction!.Value, 2);
 
             //they don't get to attack twice in a turn
             Bashed.Remove(basher);
             Bashed.Remove(target);
         }
 
-        foreach (var (_, attack) in Bashed.ToList()) //copy for safety
+        foreach (var (_, attack) in Bashed)
         {
-            if (GameWorld.IsInBounds(attack))
+            if (TryGetCell(attack, out var cell))
             {
-                if (GameWorld.Layout[attack].Player != null)
+                var victim = cell.Player;
+                if (victim != null && AlivePlayers.Contains(victim))
                 {
-                    ToKill.Add(GameWorld.Layout[attack].Player!);
+                    ToKill.Add(victim);
                 }
             }
         }
 
-        foreach (var dead in ToKill)
+        foreach (var dead in ToKill.Distinct())
         {
             Kill(dead);
         }
@@ -311,47 +271,110 @@ public class Engine
     }
 
     //
+    //
+    //
 
     private void Bonk(IBot bot, (int x, int y) direction, int movement = 2)
     {
+        if (!AlivePlayers.Contains(bot)) { return; }
+
         var EndPos = bot.Position;
         var Knockback = (-direction.x, -direction.y);
 
         for (int i = 1; i <= movement; i++)
         {
             var NextPos = (bot.Position.x + Knockback.Item1 * i, bot.Position.y + Knockback.Item2 * i);
-            if (!GameWorld.Layout.ContainsKey(NextPos)) { break; } //prevent OoB
+            if (!TryGetCell(NextPos, out var cell)) { break; }
 
-            if (GameWorld.Layout[NextPos].Construct is Wall) { break; } //your nose on the wall
+            if (cell.Construct is Wall) { break; } //your nose on the wall
 
             EndPos = NextPos;
         }
 
-        if (GameWorld.Layout[EndPos].Construct is Spike)
+        if (GameWorld.Layout[EndPos].Construct is Spike) //I don't want to run TryGetcell again just to get cell, should do differently
         {
             Kill(bot);
+            return;
         }
 
-        GameWorld.Layout[bot.Position].Player = null;
-        bot.Position = EndPos;
-        GameWorld.Layout[EndPos].Player = bot;
-    }
-
-    private (int x, int y) GetIntent(IBot bot, Dictionary<IBot, (int x, int y)> dict1, Dictionary<IBot, (int x, int y)> dict2)
-    {
-        if (dict1.ContainsKey(bot)) { return dict1[bot]; }
-        else if (dict2.ContainsKey(bot)) { return dict2[bot]; }
-        throw new Exception("Where'd you get this bot? It isn't part of your dictionaries!");
+        MoveBotToTile(bot, EndPos);
     }
 
     private void Kill(IBot bot)
     {
-        if (GameWorld.Layout.ContainsKey(bot.Position) &&
-            GameWorld.Layout[bot.Position].Player == bot)
+        //Now removes every mention of the bot on the field
+        foreach (var cell in GameWorld.Layout)
         {
-            GameWorld.Layout[bot.Position].Player = null;
+            if (cell.Value.Player == bot)
+                cell.Value.Player = null;
         }
 
         AlivePlayers.Remove(bot);
+    }
+
+    private bool TryGetCell((int x, int y) pos, out Cell cell)
+    {
+        if (GameWorld.IsInBounds(pos))
+        {
+            cell = GameWorld.Layout[pos];
+            return true;
+        }
+        cell = null!;
+        return false;
+    }
+
+    private void MoveBotToTile(IBot bot, (int x, int y) pos)
+    {
+        if (!AlivePlayers.Contains(bot)) return;
+
+        //Remove bot from any tile
+        foreach (var cell in GameWorld.Layout.Values)
+        {
+            if (cell.Player == bot)
+                cell.Player = null;
+        }
+
+        //Assign to new tile
+        GameWorld.Layout[pos].Player = bot;
+        bot.Position = pos;
+    }
+
+    private void DoBash(IBot bot, Action decision, Dictionary<IBot, (int x, int y)> Bashed)
+    {
+        var BashedCell = bot.Position.Add(decision.Direction!.Value);
+        Bashed[bot] = BashedCell;
+    }
+
+    private void DoLunge(IBot bot, Action decision, Dictionary<IBot, (int x, int y)> Bashed, List<IBot> ToKill)
+    {
+        int Movement = 1; //how far Lunge lunges
+        var EndPos = bot.Position;
+
+        for (int i = 1; i <= Movement; i++) //this is very similar to Bonk so might refactor at some point
+        {
+            var NextPos = (bot.Position.x + decision.Direction!.Value.Xmove * i, bot.Position.y + decision.Direction!.Value.Ymove * i);
+            if (!GameWorld.IsInBounds(NextPos)) { break; }
+
+            if (GameWorld.Layout[NextPos].Construct is Wall) { break; } //your nose on the wall
+            EndPos = NextPos;
+
+        }
+
+        if (GameWorld.Layout[EndPos].Construct is Spike) //can jump over spikes, but not land on them
+        {
+            ToKill.Add(bot);
+            return;
+        }
+
+        if (GameWorld.Layout[EndPos].Player != null)
+        {
+            ToKill.Add(bot);
+            ToKill.Add(GameWorld.Layout[EndPos].Player!);
+            return;
+        }
+
+        MoveBotToTile(bot, EndPos);
+        var BashedCell = EndPos.Add(decision.Direction!.Value); //Bash after Lunge movement
+        Bashed[bot] = BashedCell; //Basher Bashed Target
     }
 }

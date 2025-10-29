@@ -104,49 +104,46 @@ public class World
 
     public void RenderWorld()
     {
-        //Reset cursor to top-left
-        Console.SetCursorPosition(0, 0);
-
-        //Frame counter
-        Console.WriteLine("=== WORLD STATE ===");
-        Console.WriteLine();
 
         int minX = Layout.Keys.Min(p => p.x);
         int maxX = Layout.Keys.Max(p => p.x);
         int minY = Layout.Keys.Min(p => p.y);
         int maxY = Layout.Keys.Max(p => p.y);
 
+        Console.SetCursorPosition(0, 0);
+
         for (int y = minY; y <= maxY; y++)
         {
             for (int x = minX; x <= maxX; x++)
             {
                 var pos = (x, y);
-                if (!Layout.ContainsKey(pos))
+
+                if (!Layout.TryGetValue(pos, out var cell))
                 {
                     Console.Write("  ");
                     continue;
                 }
 
-                var cell = Layout[pos];
-                char symbol = cell.Construct switch
-                {
-                    Wall => '#',
-                    Spike => 'S',
-                    Danger => 'D',
-                    Empty => '.',
-                    _ => '?'
-                };
+                char symbol;
 
-                if (cell.Player != null)
-                    symbol = 'P';
+                // Tiles take priority
+                if (cell.Construct is Wall)
+                    symbol = '#';
+                else if (cell.Construct is Spike)
+                    symbol = 'S';
+                else if (cell.Construct is Danger)
+                    symbol = 'D';
+                else if (cell.Construct is Empty && cell.Player != null)
+                    symbol = 'P'; // player only on empty tile
+                else
+                    symbol = '.';
 
                 Console.Write(symbol + " ");
             }
             Console.WriteLine();
         }
-
-        Console.WriteLine();
+        Console.WriteLine("===WORLD STATE===");
         Console.Out.Flush();
-        Thread.Sleep(250); //delay between frames
+        Thread.Sleep(333);
     }
 }
