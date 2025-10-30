@@ -2,7 +2,7 @@ using System.Runtime.CompilerServices;
 
 namespace BotBash.Core;
 
-public record struct Coordinate
+public readonly record struct Coordinate
 {
     public int X { get; init; }
     public int Y { get; init; }
