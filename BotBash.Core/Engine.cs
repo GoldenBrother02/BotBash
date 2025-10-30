@@ -14,7 +14,7 @@ public enum GameState
 public class Engine
 {
     private World GameWorld { get; set; }
-    private List<IBot> StartingPlayers { get; set; } //could be used for a statistic?
+    private List<IBot> StartingPlayers { get; set; } //Could be used for a statistic?
     private List<IBot> AlivePlayers = [];
     private Dictionary<IBot, Action> BotActions = [];
     private GameState State;
@@ -106,13 +106,13 @@ public class Engine
             }
         }
 
-        foreach (var pos in NewPositions.ToList()) //iterate over a copy
+        foreach (var pos in NewPositions.ToList()) //Iterate over a copy
         {
             if (TryGetCell(pos.Value, out var cell))
             {
                 if (cell.Construct is Wall)
                 {
-                    NewPositions[pos.Key] = pos.Key.Position; //bot stays in place if hitting wall
+                    NewPositions[pos.Key] = pos.Key.Position; //Bot stays in place if hitting wall
                 }
 
                 if (cell.Construct is Spike)
@@ -122,12 +122,12 @@ public class Engine
             }
         }
 
-        //bots go to same tile
+        //Bots go to same tile
         var DuplicateBots = NewPositions.GroupBy(entry => entry.Value)
                                         .Where(duplicates => duplicates.Count() > 1)
                                         .SelectMany(bots => bots.Select(key => key.Key));
 
-        //bots go to eachother's tile
+        //Bots go to eachother's tile
         var SwapPairs = NewPositions.Where(pair => NewPositions
                                         .Any(other => other.Key != pair.Key
                                             && other.Value.Equals(pair.Key.Position)
@@ -177,11 +177,11 @@ public class Engine
         var HitEachother = Bashed.SelectMany(pair =>  //Pair up A bashing B with B bashing A
                                     Bashed.Where(other =>
                                     other.Key != pair.Key && pair.Value == other.Key.Position && other.Value == pair.Key.Position)
-                                    .Select(other => // swap the input so (B, A) becomes (A, B) which is equal to (A, B)
+                                    .Select(other => //Swap the input so (B, A) becomes (A, B) which is equal to (A, B)
                                         pair.Key.GetHashCode() < other.Key.GetHashCode()
                                             ? (Attacker: pair.Key, Target: other.Key)
                                             : (Attacker: other.Key, Target: pair.Key)))
-                                .Distinct() // remove duplicates
+                                .Distinct() //Remove duplicates
                                 .ToList();
 
         foreach (var (basher, target) in HitEachother)
@@ -191,7 +191,7 @@ public class Engine
             Bonk(basher, BotActions[basher].Direction!.Value, 2);
             Bonk(target, BotActions[target].Direction!.Value, 2);
 
-            //they don't get to attack twice in a turn
+            //They don't get to attack twice in a turn
             Bashed.Remove(basher);
             Bashed.Remove(target);
         }
@@ -214,7 +214,7 @@ public class Engine
         }
     }
 
-    private void WorldEdits()  //the current logic will cause scenarios where bots get cut off from eachother and they have to wait to die
+    private void WorldEdits()  //The current logic will cause scenarios where bots get cut off from eachother and they have to wait to die
     {
         HazardCountdown--;
         var DangerCells = GameWorld.Layout.Where(cell => cell.Value.Construct is Danger);
@@ -257,11 +257,11 @@ public class Engine
         }
     }
 
-    private void VictoryCheck() //victory if you're the last bot alive, draw if you both died same turn aka 0 Bots alive
+    private void VictoryCheck()
     {
         foreach (var bot in AlivePlayers)
         {
-            //resets vision each turn, move to render function when making display later
+            //Resets vision each turn, move to render function when making display outside of console later
             bot.ScanCooldown -= 1;
             bot.LungeCooldown = Math.Max(0, bot.LungeCooldown - 1);
             if (bot.ScanCooldown == 0) { bot.Vision = 1; }
@@ -318,10 +318,10 @@ public class Engine
 
     private void DoLunge(IBot bot, Action decision, Dictionary<IBot, Coordinate> Bashed, List<IBot> ToKill)
     {
-        int Movement = 1; //how far Lunge lunges
+        int Movement = 1; //How far Lunge lunges
         var EndPos = GoTheDistance(bot.Position, decision.Direction!.Value, Movement);
 
-        if (GameWorld.Layout[EndPos].Construct is Spike) //can jump over spikes, but not land on them
+        if (GameWorld.Layout[EndPos].Construct is Spike) //Can jump over spikes, but not land on them
         {
             ToKill.Add(bot);
             return;

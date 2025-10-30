@@ -11,7 +11,7 @@ public class World
     {
         Width = width;
         Height = height;
-        Layout = new Dictionary<Coordinate, Cell>();
+        Layout = [];
     }
 
     public void InitialiseRandom()
@@ -75,13 +75,13 @@ public class World
 
             int doubleError = 2 * errorTerm;  //Avoid Fractions
 
-            if (doubleError > -Ydistance) //too much Y, do X step
+            if (doubleError > -Ydistance) //Too much Y, do X step
             {
                 errorTerm -= Ydistance;
                 currentX += stepX;
             }
 
-            if (doubleError < Xdistance)  //too much X, do Y step
+            if (doubleError < Xdistance)  //Too much X, do Y step
             {
                 errorTerm += Xdistance;
                 currentY += stepY;
@@ -128,7 +128,7 @@ public class World
 
                 char symbol;
 
-                // Tiles take priority
+                //Tiles take priority
                 if (cell.Construct is Wall)
                     symbol = '#';
                 else if (cell.Construct is Spike)
@@ -136,7 +136,7 @@ public class World
                 else if (cell.Construct is Danger)
                     symbol = 'D';
                 else if (cell.Construct is Empty && cell.Player != null)
-                    symbol = 'P'; // player only on empty tile
+                    symbol = 'P'; //Player only on empty tile
                 else
                     symbol = '.';
 
