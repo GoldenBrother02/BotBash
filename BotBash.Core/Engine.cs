@@ -123,12 +123,22 @@ public class Engine
             }
         }
 
+        //bots go to same tile
         var DuplicateBots = NewPositions.GroupBy(entry => entry.Value)
                                         .Where(duplicates => duplicates.Count() > 1)
                                         .SelectMany(bots => bots.Select(key => key.Key))
                                         .ToList();
 
+        //bots go to eachother's tile
+        var SwapPairs = NewPositions.Where(pair => NewPositions
+                                    .Any(other => other.Key != pair.Key
+                                    && other.Value.Equals(pair.Key.Position)
+                                    && pair.Value.Equals(other.Key.Position)))
+                                    .Select(pair => pair.Key)
+                                    .ToList();
+
         ToKill.AddRange(DuplicateBots);
+        ToKill.AddRange(SwapPairs);
 
         foreach (var dead in ToKill.Distinct()) //Don't delete bots that might have been added twice cus that'd error
         {
