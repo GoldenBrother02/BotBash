@@ -101,7 +101,7 @@ public class Engine
             var Decision = BotActions[bot];
             if (Decision.Type is ActionType.Move)
             {
-                var NextPos = bot.Position.Add(Decision.Direction!.Value);
+                var NextPos = bot.Position + Decision.Direction!.Value;
                 NewPositions.Add(bot, NextPos);
             }
         }
@@ -310,25 +310,9 @@ public class Engine
         AlivePlayers.Remove(bot);
     }
 
-    private void MoveBotToTile(IBot bot, Coordinate pos)
-    {
-        if (!AlivePlayers.Contains(bot)) return;
-
-        //Remove bot from any tile
-        foreach (var cell in GameWorld.Layout.Values)
-        {
-            if (cell.Player == bot)
-                cell.Player = null;
-        }
-
-        //Assign to new tile
-        GameWorld.Layout[pos].Player = bot;
-        bot.Position = pos;
-    }
-
     private void DoBash(IBot bot, Action decision, Dictionary<IBot, Coordinate> Bashed)
     {
-        var BashedCell = bot.Position.Add(decision.Direction!.Value);
+        var BashedCell = bot.Position + decision.Direction!.Value;
         Bashed[bot] = BashedCell;
     }
 
@@ -351,19 +335,8 @@ public class Engine
         }
 
         MoveBotToTile(bot, EndPos);
-        var BashedCell = EndPos.Add(decision.Direction!.Value); //Bash after Lunge movement
+        var BashedCell = EndPos + decision.Direction!.Value; //Bash after Lunge movement
         Bashed[bot] = BashedCell; //Basher Bashed Target
-    }
-
-    private bool TryGetCell(Coordinate pos, out Cell cell)
-    {
-        if (GameWorld.IsInBounds(pos))
-        {
-            cell = GameWorld.Layout[pos];
-            return true;
-        }
-        cell = null!;
-        return false;
     }
 
     private Coordinate GoTheDistance(Coordinate start, Coordinate direction, int maxSteps)
@@ -381,5 +354,32 @@ public class Engine
         }
 
         return EndPos;
+    }
+
+    private bool TryGetCell(Coordinate pos, out Cell cell)
+    {
+        if (GameWorld.IsInBounds(pos))
+        {
+            cell = GameWorld.Layout[pos];
+            return true;
+        }
+        cell = null!;
+        return false;
+    }
+
+    private void MoveBotToTile(IBot bot, Coordinate pos)
+    {
+        if (!AlivePlayers.Contains(bot)) return;
+
+        //Remove bot from any tile
+        foreach (var cell in GameWorld.Layout.Values)
+        {
+            if (cell.Player == bot)
+                cell.Player = null;
+        }
+
+        //Assign to new tile
+        GameWorld.Layout[pos].Player = bot;
+        bot.Position = pos;
     }
 }
