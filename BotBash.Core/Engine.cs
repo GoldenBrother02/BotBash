@@ -36,7 +36,6 @@ public class Engine
         {
             BotDecisions();
             BotMovement();
-            //bots can walk through eachother rn
             BotBashes();
             WorldEdits();
             BotScan();
@@ -126,16 +125,14 @@ public class Engine
         //bots go to same tile
         var DuplicateBots = NewPositions.GroupBy(entry => entry.Value)
                                         .Where(duplicates => duplicates.Count() > 1)
-                                        .SelectMany(bots => bots.Select(key => key.Key))
-                                        .ToList();
+                                        .SelectMany(bots => bots.Select(key => key.Key));
 
         //bots go to eachother's tile
         var SwapPairs = NewPositions.Where(pair => NewPositions
-                                    .Any(other => other.Key != pair.Key
-                                    && other.Value.Equals(pair.Key.Position)
-                                    && pair.Value.Equals(other.Key.Position)))
-                                    .Select(pair => pair.Key)
-                                    .ToList();
+                                        .Any(other => other.Key != pair.Key
+                                            && other.Value.Equals(pair.Key.Position)
+                                            && pair.Value.Equals(other.Key.Position)))
+                                    .Select(pair => pair.Key);
 
         ToKill.AddRange(DuplicateBots);
         ToKill.AddRange(SwapPairs);
@@ -289,18 +286,8 @@ public class Engine
     {
         if (!AlivePlayers.Contains(bot)) { return; }
 
-        var EndPos = bot.Position;
-        var Knockback = (-direction.X, -direction.Y);
-
-        for (int i = 1; i <= movement; i++)
-        {
-            var NextPos = new Coordinate(bot.Position.X + Knockback.Item1 * i, bot.Position.Y + Knockback.Item2 * i);
-            if (!TryGetCell(NextPos, out var cell)) { break; }
-
-            if (cell.Construct is Wall) { break; } //your nose on the wall
-
-            EndPos = NextPos;
-        }
+        var Knockback = new Coordinate(-direction.X, -direction.Y);
+        var EndPos = GoTheDistance(bot.Position, Knockback, movement);
 
         if (GameWorld.Layout[EndPos].Construct is Spike) //I don't want to run TryGetcell again just to get cell, should do differently
         {
@@ -321,17 +308,6 @@ public class Engine
         }
 
         AlivePlayers.Remove(bot);
-    }
-
-    private bool TryGetCell(Coordinate pos, out Cell cell)
-    {
-        if (GameWorld.IsInBounds(pos))
-        {
-            cell = GameWorld.Layout[pos];
-            return true;
-        }
-        cell = null!;
-        return false;
     }
 
     private void MoveBotToTile(IBot bot, Coordinate pos)
@@ -359,17 +335,7 @@ public class Engine
     private void DoLunge(IBot bot, Action decision, Dictionary<IBot, Coordinate> Bashed, List<IBot> ToKill)
     {
         int Movement = 1; //how far Lunge lunges
-        var EndPos = bot.Position;
-
-        for (int i = 1; i <= Movement; i++) //this is very similar to Bonk so might refactor at some point
-        {
-            var NextPos = new Coordinate(bot.Position.X + decision.Direction!.Value.X * i, bot.Position.Y + decision.Direction!.Value.Y * i);
-            if (!GameWorld.IsInBounds(NextPos)) { break; }
-
-            if (GameWorld.Layout[NextPos].Construct is Wall) { break; } //your nose on the wall
-            EndPos = NextPos;
-
-        }
+        var EndPos = GoTheDistance(bot.Position, decision.Direction!.Value, Movement);
 
         if (GameWorld.Layout[EndPos].Construct is Spike) //can jump over spikes, but not land on them
         {
@@ -387,5 +353,33 @@ public class Engine
         MoveBotToTile(bot, EndPos);
         var BashedCell = EndPos.Add(decision.Direction!.Value); //Bash after Lunge movement
         Bashed[bot] = BashedCell; //Basher Bashed Target
+    }
+
+    private bool TryGetCell(Coordinate pos, out Cell cell)
+    {
+        if (GameWorld.IsInBounds(pos))
+        {
+            cell = GameWorld.Layout[pos];
+            return true;
+        }
+        cell = null!;
+        return false;
+    }
+
+    private Coordinate GoTheDistance(Coordinate start, Coordinate direction, int maxSteps)
+    {
+        var EndPos = start;
+
+        for (int i = 1; i <= maxSteps; i++)
+        {
+            var NextPos = new Coordinate(start.X + direction.X * i, start.Y + direction.Y * i);
+
+            if (!TryGetCell(NextPos, out var cell)) { break; }
+            if (cell.Construct is Wall) { break; } //your nose on the wall
+
+            EndPos = NextPos;
+        }
+
+        return EndPos;
     }
 }
