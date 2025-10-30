@@ -12,3 +12,11 @@ public class Cell
         Construct = construct;
     }
 }
+
+public record SerializableCell
+(
+    int X,
+    int Y,
+    string ConstructType,
+    bool HasPlayer
+);

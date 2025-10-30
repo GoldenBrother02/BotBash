@@ -148,4 +148,34 @@ public class World
         Console.Out.Flush();
         Thread.Sleep(333);
     }
+
+    public SerializableWorld ToSerializable()
+    {
+        var cells = Layout.Select(pair =>
+        {
+            var coord = pair.Key;
+            var cell = pair.Value;
+
+            return new SerializableCell(
+                coord.X,
+                coord.Y,
+                cell.Construct.GetType().Name,   //"Wall", "Spike", "Empty", ...
+                cell.Player != null              //true if bot, false if not
+            );
+        }).ToList();
+
+        return new SerializableWorld(
+            Width,
+            Height,
+            cells
+        );
+    }
+
 }
+
+public record SerializableWorld
+(
+    int Width,
+    int Height,
+    List<SerializableCell> Cells
+);

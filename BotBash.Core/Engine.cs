@@ -20,6 +20,8 @@ public class Engine
     private GameState State;
     private int HazardCountdown = 5;
 
+    public Func<World, Task>? OnWorldUpdated;
+
     public Engine(World gameworld, List<IBot> players)
     {
         GameWorld = gameworld;
@@ -27,7 +29,7 @@ public class Engine
         AlivePlayers = new List<IBot>(players);
     }
 
-    public void Start()
+    public async Task Start()
     {
         InitialiseGame();
         Console.Clear();
@@ -40,12 +42,16 @@ public class Engine
             WorldEdits();
             BotScan();
 
-            GameWorld.RenderWorld();
+            //GameWorld.RenderWorld();
 
             VictoryCheck();
             BotActions.Clear();
 
             Console.WriteLine($"Alive players: {AlivePlayers.Count}");
+
+            if (OnWorldUpdated != null) { await OnWorldUpdated(GameWorld); }
+
+            await Task.Delay(500); //2 updates per second
         }
 
         if (State is GameState.Victory) { Console.WriteLine("Winner"); } // *_-_x*[TODO]*x_-_*
