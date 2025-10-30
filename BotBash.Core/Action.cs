@@ -13,23 +13,23 @@ public enum ActionType
 public class Action
 {
     public ActionType Type { get; set; }
-    public (int Xmove, int Ymove)? Direction { get; set; }
+    public Coordinate? Direction { get; set; }
 
-    public Action(ActionType type, (int xmove, int ymove)? direction)
+    public Action(ActionType type, Coordinate? direction)
     {
         Type = type;
 
         if (type == ActionType.Scan || type == ActionType.Wait) //scan/wait don't use direction
         {
-            Direction = (0, 0); //I could also check if direction still has a value and throw error but that seems unnecessary
+            Direction = new Coordinate(0, 0); //I could also check if direction still has a value and throw error but that seems unnecessary
             return;
         }
 
         else if (direction.HasValue)
         {
-            var (x, y) = direction.Value;
+            var coord = direction.Value;
 
-            if ((Math.Abs(x) == 1 && y == 0) || (Math.Abs(y) == 1 && x == 0))
+            if ((Math.Abs(coord.X) == 1 && coord.Y == 0) || (Math.Abs(coord.Y) == 1 && coord.X == 0))
             {
                 Direction = direction;
                 return;

@@ -36,6 +36,7 @@ public class Engine
         {
             BotDecisions();
             BotMovement();
+            //bots can walk through eachother rn
             BotBashes();
             WorldEdits();
             BotScan();
@@ -93,7 +94,7 @@ public class Engine
 
     private void BotMovement()
     {
-        var NewPositions = new Dictionary<IBot, (int x, int y)>();
+        var NewPositions = new Dictionary<IBot, Coordinate>();
         var ToKill = new List<IBot>();
 
         foreach (var bot in AlivePlayers)
@@ -146,7 +147,7 @@ public class Engine
 
     private void BotBashes()
     {
-        var Bashed = new Dictionary<IBot, (int x, int y)>(); //Basher Bashed Target
+        var Bashed = new Dictionary<IBot, Coordinate>(); //Basher Bashed Target
         var ToKill = new List<IBot>();
 
         foreach (var bot in AlivePlayers)
@@ -274,16 +275,16 @@ public class Engine
     //
     //
 
-    private void Bonk(IBot bot, (int x, int y) direction, int movement = 2)
+    private void Bonk(IBot bot, Coordinate direction, int movement = 2)
     {
         if (!AlivePlayers.Contains(bot)) { return; }
 
         var EndPos = bot.Position;
-        var Knockback = (-direction.x, -direction.y);
+        var Knockback = (-direction.X, -direction.Y);
 
         for (int i = 1; i <= movement; i++)
         {
-            var NextPos = (bot.Position.x + Knockback.Item1 * i, bot.Position.y + Knockback.Item2 * i);
+            var NextPos = new Coordinate(bot.Position.X + Knockback.Item1 * i, bot.Position.Y + Knockback.Item2 * i);
             if (!TryGetCell(NextPos, out var cell)) { break; }
 
             if (cell.Construct is Wall) { break; } //your nose on the wall
@@ -312,7 +313,7 @@ public class Engine
         AlivePlayers.Remove(bot);
     }
 
-    private bool TryGetCell((int x, int y) pos, out Cell cell)
+    private bool TryGetCell(Coordinate pos, out Cell cell)
     {
         if (GameWorld.IsInBounds(pos))
         {
@@ -323,7 +324,7 @@ public class Engine
         return false;
     }
 
-    private void MoveBotToTile(IBot bot, (int x, int y) pos)
+    private void MoveBotToTile(IBot bot, Coordinate pos)
     {
         if (!AlivePlayers.Contains(bot)) return;
 
@@ -339,20 +340,20 @@ public class Engine
         bot.Position = pos;
     }
 
-    private void DoBash(IBot bot, Action decision, Dictionary<IBot, (int x, int y)> Bashed)
+    private void DoBash(IBot bot, Action decision, Dictionary<IBot, Coordinate> Bashed)
     {
         var BashedCell = bot.Position.Add(decision.Direction!.Value);
         Bashed[bot] = BashedCell;
     }
 
-    private void DoLunge(IBot bot, Action decision, Dictionary<IBot, (int x, int y)> Bashed, List<IBot> ToKill)
+    private void DoLunge(IBot bot, Action decision, Dictionary<IBot, Coordinate> Bashed, List<IBot> ToKill)
     {
         int Movement = 1; //how far Lunge lunges
         var EndPos = bot.Position;
 
         for (int i = 1; i <= Movement; i++) //this is very similar to Bonk so might refactor at some point
         {
-            var NextPos = (bot.Position.x + decision.Direction!.Value.Xmove * i, bot.Position.y + decision.Direction!.Value.Ymove * i);
+            var NextPos = new Coordinate(bot.Position.X + decision.Direction!.Value.X * i, bot.Position.Y + decision.Direction!.Value.Y * i);
             if (!GameWorld.IsInBounds(NextPos)) { break; }
 
             if (GameWorld.Layout[NextPos].Construct is Wall) { break; } //your nose on the wall

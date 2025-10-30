@@ -5,13 +5,13 @@ public class World
 {
     public int Width { get; set; }
     public int Height { get; set; }
-    public Dictionary<(int x, int y), Cell> Layout { get; set; }
+    public Dictionary<Coordinate, Cell> Layout { get; set; }
 
     public World(int width, int height)
     {
         Width = width;
         Height = height;
-        Layout = new Dictionary<(int x, int y), Cell>();
+        Layout = new Dictionary<Coordinate, Cell>();
     }
 
     public void InitialiseRandom()
@@ -19,12 +19,12 @@ public class World
         Layout = (from x in Enumerable.Range(1, Width)
                   from y in Enumerable.Range(1, Height)
                   select new { x, y })
-                  .ToDictionary(k => (k.x, k.y), v => new Cell(null!, Randomise()));
+                  .ToDictionary(k => new Coordinate(k.x, k.y), v => new Cell(null!, Randomise()));
     }
 
-    public HashSet<(int x, int y)> GetVisibleArea((int x, int y) botPos, int viewRange)
+    public HashSet<Coordinate> GetVisibleArea(Coordinate botPos, int viewRange)
     {
-        var visibleTiles = new HashSet<(int x, int y)>();
+        var visibleTiles = new HashSet<Coordinate>();
 
         //Iterate over diamond-shaped area using Manhattan distance
         for (int offsetX = -viewRange; offsetX <= viewRange; offsetX++)
@@ -35,7 +35,7 @@ public class World
                 //Only check the outer tiles, the function will go over every tile regardless and this removes extra loops over the same tiles
                 if (Math.Abs(offsetX) + Math.Abs(offsetY) == viewRange)
                 {
-                    var targetTile = (botPos.x + offsetX, botPos.y + offsetY);
+                    var targetTile = new Coordinate(botPos.X + offsetX, botPos.Y + offsetY);
                     CastLine(botPos, targetTile, visibleTiles);
                 }
             }
@@ -45,12 +45,12 @@ public class World
 
     //Cast a line of sight from startTile to targetTile, stopping at walls
     //Bresenhem's line algorythm
-    private void CastLine((int x, int y) startTile, (int x, int y) targetTile, HashSet<(int x, int y)> visibleTiles)
+    private void CastLine(Coordinate startTile, Coordinate targetTile, HashSet<Coordinate> visibleTiles)
     {
-        int currentX = startTile.x;
-        int currentY = startTile.y;
-        int endX = targetTile.x;
-        int endY = targetTile.y;
+        int currentX = startTile.X;
+        int currentY = startTile.Y;
+        int endX = targetTile.X;
+        int endY = targetTile.Y;
 
         int Xdistance = Math.Abs(endX - currentX);   //Total horizontal distance to target
         int Ydistance = Math.Abs(endY - currentY);   //Total vertical distance to target
@@ -60,13 +60,15 @@ public class World
 
         while (true)
         {
-            //Stop if tile is outside the game world
-            if (!Layout.ContainsKey((currentX, currentY))) { break; }
+            var coord = new Coordinate(currentX, currentX);
 
-            visibleTiles.Add((currentX, currentY));
+            //Stop if tile is outside the game world
+            if (!Layout.ContainsKey(coord)) { break; }
+
+            visibleTiles.Add(coord);
 
             //Stop line if wall
-            if (Layout[(currentX, currentY)].Construct is Wall) { break; }
+            if (Layout[coord].Construct is Wall) { break; }
 
             //Stop if reach end
             if (currentX == endX && currentY == endY) { break; }
@@ -99,16 +101,16 @@ public class World
         return Empty.Create();
     }
 
-    public bool IsInBounds((int x, int y) pos)
-    => pos.x >= 1 && pos.x <= Width && pos.y >= 1 && pos.y <= Height;
+    public bool IsInBounds(Coordinate pos)
+    => pos.X >= 1 && pos.X <= Width && pos.Y >= 1 && pos.Y <= Height;
 
     public void RenderWorld()
     {
 
-        int minX = Layout.Keys.Min(p => p.x);
-        int maxX = Layout.Keys.Max(p => p.x);
-        int minY = Layout.Keys.Min(p => p.y);
-        int maxY = Layout.Keys.Max(p => p.y);
+        int minX = Layout.Keys.Min(p => p.X);
+        int maxX = Layout.Keys.Max(p => p.X);
+        int minY = Layout.Keys.Min(p => p.Y);
+        int maxY = Layout.Keys.Max(p => p.Y);
 
         Console.SetCursorPosition(0, 0);
 
@@ -116,9 +118,9 @@ public class World
         {
             for (int x = minX; x <= maxX; x++)
             {
-                var pos = (x, y);
+                var coord = new Coordinate(x, y);
 
-                if (!Layout.TryGetValue(pos, out var cell))
+                if (!Layout.TryGetValue(coord, out var cell))
                 {
                     Console.Write("  ");
                     continue;
