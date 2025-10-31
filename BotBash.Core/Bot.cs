@@ -4,21 +4,18 @@ namespace BotBash.Core;
 public interface IBot
 {
     Coordinate Position { get; set; }
+    BotAction? Action { get; set; }
     int Vision { get; set; }
     int ScanCooldown { get; set; }
     int LungeCooldown { get; set; }
 
     Action RunLogic(HashSet<Coordinate> VisibleArea);
-    Action Move(Coordinate Direction);
-    Action Bash(Coordinate Direction);
-    Action Lunge(Coordinate Direction);
-    Action Scan();
-    Action Wait();
 }
 
 public class TestBot : IBot
 {
     public Coordinate Position { get; set; }
+    public BotAction? Action { get; set; }
     public int Vision { get; set; }
     public int ScanCooldown { get; set; }
     public int LungeCooldown { get; set; }
@@ -29,55 +26,46 @@ public class TestBot : IBot
         //Is called by the engine, runs whatever logic the player makes, and returns an action
     }
 
-    public Action Move(Coordinate Direction)
-    {
-        return new Action(ActionType.Move, Direction);
-    }
-
-    public Action Bash(Coordinate Direction)
-    {
-        return new Action(ActionType.Bash, Direction);
-    }
-
-    public Action Lunge(Coordinate Direction)
-    {
-        return new Action(ActionType.Lunge, Direction);
-    }
-
-    public Action Scan()
-    {
-        return new Action(ActionType.Scan, new Coordinate(0, 0));
-    }
-
-    public Action Wait()
-    {
-        return new Action(ActionType.Wait, new Coordinate(0, 0));
-    }
-
     private Action RandomAction()
     {
         var RNG = new Random();
         var value = RNG.Next(1, 6);
 
-        var directions = new Coordinate[]
+        var directions = new Direction[]
         {
-            new Coordinate(1, 0),
-            new Coordinate(-1, 0),
-            new Coordinate(0, 1),
-            new Coordinate(0, -1)
+            Direction.Up,
+            Direction.Down,
+            Direction.Left,
+            Direction.Right
         };
 
         var randomDirection = directions[RNG.Next(directions.Length)];
 
-
         return value switch
         {
-            1 => Move(randomDirection),
-            2 => Bash(randomDirection),
-            3 => Lunge(randomDirection),
-            4 => Scan(),
-            5 => Wait(),
-            _ => Wait(),
+            1 => Action!.Move(randomDirection),
+            2 => Action!.Bash(randomDirection),
+            3 => Action!.Lunge(randomDirection),
+            4 => Action!.Scan(),
+            5 => Action!.Wait(),
+            _ => Action!.Wait(),
         };
+    }
+}
+
+
+
+
+public class ManualBot : IBot
+{
+    public Coordinate Position { get; set; }
+    public BotAction? Action { get; set; }
+    public int Vision { get; set; }
+    public int ScanCooldown { get; set; }
+    public int LungeCooldown { get; set; }
+
+    public Action RunLogic(HashSet<Coordinate> VisibleArea)  //add an input here so players can manually control a bot
+    {
+        return Action!.Wait();
     }
 }

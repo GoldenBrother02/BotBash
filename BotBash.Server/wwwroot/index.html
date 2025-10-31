@@ -11,12 +11,15 @@
     <h1>Welcome to BotBash!</h1>
     <p>Choose a room to join:</p>
 
-    <button id="joinBtn">Default</button>
+    <button id="joinManual">Manual</button>
+    <button id="joinAuto">Automatic</button>
 
     <script>
-        document.getElementById("joinBtn").addEventListener("click", () => {
-            //For now, just a single shared room
-            window.location.href = "/game.html?room=default";
+        document.getElementById("joinManual").addEventListener("click", () => {
+            window.location.href = "/game.html?room=Manual";
+        });
+        document.getElementById("joinAuto").addEventListener("click", () => {
+            window.location.href = "/game.html?room=Auto";
         });
     </script>
 </body>

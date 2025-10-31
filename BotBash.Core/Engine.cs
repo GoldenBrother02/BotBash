@@ -95,6 +95,7 @@ public class Engine
             AlivePlayers[i].Vision = 1;
             AlivePlayers[i].ScanCooldown = 0;
             AlivePlayers[i].LungeCooldown = 0;
+            AlivePlayers[i].Action = new BotAction();
         }
     }
 

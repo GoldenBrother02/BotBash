@@ -9,6 +9,14 @@ public enum ActionType
     Wait
 }
 
+public enum Direction
+{
+    Up,
+    Down,
+    Left,
+    Right
+}
+
 /// <summary>A class defining what a Bot has decided to do for it's current turn.</summary>
 public class Action
 {
@@ -37,5 +45,45 @@ public class Action
             throw new ArgumentException("Direction must be one of (1,0), (-1,0), (0,1), (0,-1)");
         }
         throw new ArgumentException("This actiontype needs a direction");
+    }
+}
+
+/// <summary>A class defining the scope of a Bot's actions.</summary>
+public class BotAction()
+{
+    private Coordinate Translate(Direction direction)
+    {
+        return direction switch
+        {
+            Direction.Up => new Coordinate(0, 1),
+            Direction.Down => new Coordinate(0, -1),
+            Direction.Left => new Coordinate(-1, 0),
+            Direction.Right => new Coordinate(1, 0),
+            _ => new Coordinate(0, 0)
+        };
+    }
+    public Action Move(Direction direction)
+    {
+        return new Action(ActionType.Move, Translate(direction));
+    }
+
+    public Action Bash(Direction direction)
+    {
+        return new Action(ActionType.Bash, Translate(direction));
+    }
+
+    public Action Lunge(Direction direction)
+    {
+        return new Action(ActionType.Lunge, Translate(direction));
+    }
+
+    public Action Scan()
+    {
+        return new Action(ActionType.Scan, new Coordinate(0, 0));
+    }
+
+    public Action Wait()
+    {
+        return new Action(ActionType.Wait, new Coordinate(0, 0));
     }
 }

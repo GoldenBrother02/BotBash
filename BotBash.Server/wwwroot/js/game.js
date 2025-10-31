@@ -3,6 +3,9 @@ const connection = new signalR.HubConnectionBuilder()
     .configureLogging(signalR.LogLevel.Information)
     .build();
 
+const UrlParams = new URLSearchParams(window.location.search);
+const room = UrlParams.get("room");
+
 connection.on("Connected", (msg) => {
     console.log("[SignalR] Connected event:", msg);
 });
@@ -12,17 +15,16 @@ connection.on("WorldUpdated", (world) => {
     renderWorld(world);
 });
 
-/*
-connection.start()
-    .then(() => {
-        console.log("[SignalR] Connected to gamehub");
-        // start match
-        connection.invoke("StartGame").catch(err => console.error(err));
-    })
-    .catch(err => console.error("[SignalR] Connection error:", err));
-*/
+if (room === "Manual") {
+    connection.start().then(() => { connection.invoke("StartManualGame").catch(err => console.error(err)); })
+    document.getElementById("tickBtn").style.display = "block";
 
-connection.start().then(() => { connection.invoke("StartManualGame").catch(err => console.error(err)); })
+}
+
+if (room === "Auto") {
+    connection.start().then(() => { connection.invoke("StartGame").catch(err => console.error(err)); })
+    document.getElementById("tickBtn").style.display = "none";
+}
 
 document.getElementById("tickBtn").addEventListener("click", async () => {
     try {
