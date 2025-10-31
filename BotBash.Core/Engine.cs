@@ -18,6 +18,7 @@ public class Engine
     private List<IBot> AlivePlayers = [];
     private Dictionary<IBot, Action> BotActions = [];
     private GameState State;
+    private bool Initialized = false;
     private int HazardCountdown = 5;
 
     public Func<World, Task>? OnWorldUpdated;
@@ -36,21 +37,7 @@ public class Engine
 
         while (State is GameState.Playing)
         {
-            BotDecisions();
-            BotMovement();
-            BotBashes();
-            WorldEdits();
-            BotScan();
-
-            //GameWorld.RenderWorld();
-
-            VictoryCheck();
-            BotActions.Clear();
-
-            Console.WriteLine($"Alive players: {AlivePlayers.Count}");
-
-            if (OnWorldUpdated != null) { await OnWorldUpdated(GameWorld); }
-
+            await GameTick();
             await Task.Delay(500); //2 updates per second
         }
 
@@ -68,8 +55,31 @@ public class Engine
         */
     }
 
-    private void InitialiseGame()
+    public async Task GameTick()
     {
+        if (!Initialized || State != GameState.Playing) { return; }
+
+        BotDecisions();
+        BotMovement();
+        BotBashes();
+        WorldEdits();
+        BotScan();
+        VictoryCheck();
+
+        BotActions.Clear();
+        Console.WriteLine($"Alive players: {AlivePlayers.Count}");
+
+        if (OnWorldUpdated != null) { await OnWorldUpdated(GameWorld); }
+
+        if (State is GameState.Victory) { Console.WriteLine("Winner"); } // *_-_x*[TODO]*x_-_*
+        if (State is GameState.Draw) { Console.WriteLine("Draw"); } //      *_-_x*[TODO]*x_-_*
+    }
+
+    public void InitialiseGame()
+    {
+        if (Initialized) { return; }
+        Initialized = true;
+
         GameWorld.InitialiseRandom();
         State = GameState.Playing;
 

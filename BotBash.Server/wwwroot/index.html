@@ -2,29 +2,23 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <title>BotBash Viewer</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
-    <style>
-        body {
-            font-family: monospace;
-            background: #111;
-            color: #0f0;
-        }
-
-        #world {
-            white-space: pre;
-            line-height: 1.2;
-        }
-    </style>
+    <meta charset="UTF-8" />
+    <title>BotBash</title>
+    <link rel="stylesheet" href="css/style.css" />
 </head>
 
 <body>
-    <h2>BotBash Live</h2>
-    <div id="world">Connecting...</div>
+    <h1>Welcome to BotBash!</h1>
+    <p>Choose a room to join:</p>
 
-    <!-- Include the external JS file -->
-    <script src="/js/game.js"></script>
+    <button id="joinBtn">Default</button>
+
+    <script>
+        document.getElementById("joinBtn").addEventListener("click", () => {
+            //For now, just a single shared room
+            window.location.href = "/game.html?room=default";
+        });
+    </script>
 </body>
 
 </html>

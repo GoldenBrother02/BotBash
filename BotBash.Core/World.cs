@@ -144,7 +144,7 @@ public class World
             }
             Console.WriteLine();
         }
-        Console.WriteLine("===WORLD STATE===");
+        Console.WriteLine("====WORLD STATE====");
         Console.Out.Flush();
         Thread.Sleep(333);
     }

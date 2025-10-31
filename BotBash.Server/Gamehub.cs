@@ -21,4 +21,13 @@ public class GameHub : Hub
     {
         await _engineManager.StartMatchAsync();
     }
+
+    public async Task StartManualGame()
+    {
+        await _engineManager.StartManualGame();
+    }
+    public async Task Tick()
+    {
+        await _engineManager.Tick();
+    }
 }

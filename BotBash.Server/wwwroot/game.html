@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>BotBash Viewer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <link rel="stylesheet" href="css/style.css" />
+    <style>
+        body {
+            font-family: monospace;
+            background: #111;
+            color: #0f0;
+        }
+
+        #world {
+            white-space: pre;
+            line-height: 1.2;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>BotBash Live</h2>
+    <div id="world">Connecting...</div>
+    <button id="tickBtn">Next Tick</button>
+
+    <!-- Include the external JS file -->
+    <script src="/js/game.js"></script>
+</body>
+
+</html>

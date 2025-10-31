@@ -12,6 +12,7 @@ connection.on("WorldUpdated", (world) => {
     renderWorld(world);
 });
 
+/*
 connection.start()
     .then(() => {
         console.log("[SignalR] Connected to gamehub");
@@ -19,6 +20,17 @@ connection.start()
         connection.invoke("StartGame").catch(err => console.error(err));
     })
     .catch(err => console.error("[SignalR] Connection error:", err));
+*/
+
+connection.start().then(() => { connection.invoke("StartManualGame").catch(err => console.error(err)); })
+
+document.getElementById("tickBtn").addEventListener("click", async () => {
+    try {
+        await connection.invoke("Tick");
+    } catch (err) {
+        console.error("Tick failed:", err);
+    }
+});
 
 function renderWorld(world) {
     console.log("[Render] Rendering world", world);
