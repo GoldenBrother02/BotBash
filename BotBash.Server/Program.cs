@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.SignalR;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add SignalR
+//Add SignalR
 builder.Services.AddSignalR();
 
 builder.Services.AddSingleton<GameHub>();

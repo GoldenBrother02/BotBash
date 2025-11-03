@@ -1,33 +1,53 @@
 using Microsoft.AspNetCore.SignalR;
-using BotBash.Core;
 
 namespace BotBash.Server;
 
 public class GameHub : Hub
 {
-    private readonly EngineManager _engineManager;
+    private static readonly Dictionary<string, EngineManager> Rooms = new();
+    private readonly IHubContext<GameHub> HubContext;
 
-    public GameHub(EngineManager engineManager)
+    public GameHub(IHubContext<GameHub> hubContext)
     {
-        _engineManager = engineManager;
+        HubContext = hubContext;
     }
 
-    public override async Task OnConnectedAsync()
+    public async Task JoinRoom(string roomName)
     {
-        await Clients.Caller.SendAsync("Connected", "Welcome to BotBash!");
+        await Groups.AddToGroupAsync(Context.ConnectionId, roomName);
+        Console.WriteLine($"Client {Context.ConnectionId} joined room {roomName}");
     }
 
-    public async Task StartGame()
+    public async Task LeaveRoom(string roomName)
     {
-        await _engineManager.StartMatchAsync();
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomName);
+        await Clients.Caller.SendAsync("LeftRoom", roomName);
+        Console.WriteLine($"Client {Context.ConnectionId} left room {roomName}");
     }
 
-    public async Task StartManualGame()
+    public async Task StartGame(string roomName)
     {
-        await _engineManager.StartManualGame();
+        if (!Rooms.ContainsKey(roomName))
+        {
+            Rooms[roomName] = new EngineManager(HubContext, roomName);
+        }
+        await Rooms[roomName].StartMatchAsync();
     }
-    public async Task Tick()
+
+    public async Task StartManualGame(string roomName)
     {
-        await _engineManager.Tick();
+        if (!Rooms.ContainsKey(roomName))
+        {
+            Rooms[roomName] = new EngineManager(HubContext, roomName);
+        }
+        await Rooms[roomName].StartManualGame();
+    }
+
+    public async Task Tick(string roomName)
+    {
+        if (Rooms.TryGetValue(roomName, out var engine))
+        {
+            await engine.Tick();
+        }
     }
 }

@@ -5,24 +5,27 @@ namespace BotBash.Server;
 
 public class EngineManager
 {
-    private readonly IHubContext<GameHub> _hubContext;
-    private World? world { get; set; }
-    private List<IBot>? bots { get; set; }
-    private Engine? engine { get; set; }
+    private readonly IHubContext<GameHub> HubContext;
+    private readonly string RoomName;
+    private World? Game { get; set; }
+    private List<IBot>? Bots { get; set; }
+    private Engine? Motor { get; set; }
 
-    public EngineManager(IHubContext<GameHub> hubContext)
+    public EngineManager(IHubContext<GameHub> hubContext, string roomName)
     {
-        _hubContext = hubContext;
+        HubContext = hubContext;
+        RoomName = roomName;
+
     }
 
     public async Task StartMatchAsync()
     {
-        world = new World(10, 10);
-        bots = new List<IBot> { new TestBot(), new TestBot() };
-        engine = new Engine(world, bots);
+        Game = new World(10, 10);
+        Bots = new List<IBot> { new TestBot(), new TestBot() };
+        Motor = new Engine(Game, Bots);
 
         //Hook into world updates
-        engine.OnWorldUpdated = async (updatedWorld) =>
+        Motor.OnWorldUpdated = async (updatedWorld) =>
         {
             Console.WriteLine("[DEBUG] Sending world update to clients...");
 
@@ -31,23 +34,23 @@ public class EngineManager
                 var serial = updatedWorld.ToSerializable();
                 var json = System.Text.Json.JsonSerializer.Serialize(serial);
                 Console.WriteLine($"[DEBUG] JSON length: {json.Length}");
-                await _hubContext.Clients.All.SendAsync("WorldUpdated", serial);
+                await HubContext.Clients.Group(RoomName).SendAsync("WorldUpdated", serial);
             }
             catch (Exception ex)
             {
                 Console.WriteLine("[ERROR] Serializing world: " + ex.Message);
             }
         };
-        _ = Task.Run(async () => await engine.Start());
+        _ = Task.Run(async () => await Motor.Start());
     }
 
     public async Task StartManualGame()
     {
-        world = new World(10, 10);
-        bots = new List<IBot> { new TestBot(), new TestBot() };
-        engine = new Engine(world, bots);
+        Game = new World(10, 10);
+        Bots = new List<IBot> { new TestBot(), new TestBot() };
+        Motor = new Engine(Game, Bots);
 
-        engine.OnWorldUpdated = async (updatedWorld) =>
+        Motor.OnWorldUpdated = async (updatedWorld) =>
         {
             Console.WriteLine("[DEBUG] Sending world update to clients...");
 
@@ -56,22 +59,22 @@ public class EngineManager
                 var serial = updatedWorld.ToSerializable();
                 var json = System.Text.Json.JsonSerializer.Serialize(serial);
                 Console.WriteLine($"[DEBUG] JSON length: {json.Length}");
-                await _hubContext.Clients.All.SendAsync("WorldUpdated", serial);
+                await HubContext.Clients.Group(RoomName).SendAsync("WorldUpdated", serial);
             }
             catch (Exception ex)
             {
                 Console.WriteLine("[ERROR] Serializing world: " + ex.Message);
             }
         };
-        engine.InitialiseGame();
-        await _hubContext.Clients.All.SendAsync("WorldUpdated", world.ToSerializable());
+        Motor.InitialiseGame();
+        await HubContext.Clients.Group(RoomName).SendAsync("WorldUpdated", Game.ToSerializable());
     }
 
     public async Task Tick()
     {
-        if (engine != null)
+        if (Motor != null)
         {
-            await engine.GameTick();
+            await Motor.GameTick();
         }
         else { throw new Exception("Game not started"); }
     }

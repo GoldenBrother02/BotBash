@@ -1,10 +1,11 @@
+const UrlParams = new URLSearchParams(window.location.search);
+const room = UrlParams.get("room");
 const connection = new signalR.HubConnectionBuilder()
     .withUrl("/gamehub")
     .configureLogging(signalR.LogLevel.Information)
     .build();
 
-const UrlParams = new URLSearchParams(window.location.search);
-const room = UrlParams.get("room");
+
 
 connection.on("Connected", (msg) => {
     console.log("[SignalR] Connected event:", msg);
@@ -15,24 +16,44 @@ connection.on("WorldUpdated", (world) => {
     renderWorld(world);
 });
 
+
+
 if (room === "Manual") {
-    connection.start().then(() => { connection.invoke("StartManualGame").catch(err => console.error(err)); })
+    connection.start().then(() => {
+        connection.invoke("JoinRoom", "ManualRoom1");
+        connection.invoke("StartManualGame", "ManualRoom1").catch(err => console.error(err));
+    })
     document.getElementById("tickBtn").style.display = "block";
 
 }
 
 if (room === "Auto") {
-    connection.start().then(() => { connection.invoke("StartGame").catch(err => console.error(err)); })
+    connection.start().then(() => {
+        connection.invoke("JoinRoom", "AutoRoom1");
+        connection.invoke("StartGame", "AutoRoom1").catch(err => console.error(err));
+    })
     document.getElementById("tickBtn").style.display = "none";
 }
 
+
+
 document.getElementById("tickBtn").addEventListener("click", async () => {
     try {
-        await connection.invoke("Tick");
+        await connection.invoke("Tick", "ManualRoom1"); //only 1 manual room (for now)
     } catch (err) {
         console.error("Tick failed:", err);
     }
 });
+
+document.getElementById("leaveBtn").addEventListener("click", async () => {
+    try {
+        await connection.invoke("LeaveRoom", currentRoom);
+        window.location.href = "/"; //Go back to home page
+    } catch (err) {
+        console.error("LeaveRoom failed:", err);
+    }
+});
+
 
 function renderWorld(world) {
     console.log("[Render] Rendering world", world);

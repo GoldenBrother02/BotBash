@@ -1,9 +1,9 @@
--Multiple Rooms
--deploy with docker
--Distinction between player and spectator for sight
--implement player sight
--Manual controls for bot
--Actual victory/draw screen
--better display
--...
--Somehow allow players to input their bot code onto the deployed site to have a bot function off of that
+[X] Multiple Rooms 
+[] deploy with docker
+[] Distinction between player and spectator for sight
+[] implement player sight
+[] Manual controls for bot
+[] Actual victory/draw screen
+[] better display
+[] ...
+[] Somehow allow players to input their bot code onto the deployed site to have a bot function off of that
