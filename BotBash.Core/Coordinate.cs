@@ -1,5 +1,3 @@
-using System.Runtime.CompilerServices;
-
 namespace BotBash.Core;
 
 /// <summary>A value object holding a location for the map or a direction for actions</summary>

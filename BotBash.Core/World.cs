@@ -73,7 +73,7 @@ public class World
             //Stop if reach end
             if (currentX == endX && currentY == endY) { break; }
 
-            int doubleError = 2 * errorTerm;  //Avoid Fractions
+            int doubleError = 2 * errorTerm; //Avoid Fractions
 
             if (doubleError > -Ydistance) //Too much Y, do X step
             {
@@ -104,13 +104,13 @@ public class World
     public bool IsInBounds(Coordinate pos)
     => pos.X >= 1 && pos.X <= Width && pos.Y >= 1 && pos.Y <= Height;
 
-    public void RenderWorld()
+    public void RenderConsoleWorld()
     {
-
         int minX = Layout.Keys.Min(p => p.X);
         int maxX = Layout.Keys.Max(p => p.X);
         int minY = Layout.Keys.Min(p => p.Y);
         int maxY = Layout.Keys.Max(p => p.Y);
+        char symbol;
 
         Console.SetCursorPosition(0, 0);
 
@@ -125,8 +125,6 @@ public class World
                     Console.Write("  ");
                     continue;
                 }
-
-                char symbol;
 
                 //Tiles take priority
                 if (cell.Construct is Wall)
@@ -170,7 +168,6 @@ public class World
             cells
         );
     }
-
 }
 
 public record SerializableWorld

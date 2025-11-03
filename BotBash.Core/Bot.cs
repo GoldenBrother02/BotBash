@@ -53,9 +53,6 @@ public class TestBot : IBot
     }
 }
 
-
-
-
 public class ManualBot : IBot
 {
     public Coordinate Position { get; set; }

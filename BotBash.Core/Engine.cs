@@ -1,6 +1,3 @@
-using System.Numerics;
-using System.Security.Cryptography.X509Certificates;
-
 namespace BotBash.Core;
 
 public enum GameState
@@ -154,7 +151,7 @@ public class Engine
         ToKill.AddRange(DuplicateBots);
         ToKill.AddRange(SwapPairs);
 
-        foreach (var dead in ToKill.Distinct()) //Don't delete bots that might have been added twice cus that'd error
+        foreach (var dead in ToKill.Distinct())
         {
             NewPositions.Remove(dead);
             Kill(dead);
@@ -198,8 +195,7 @@ public class Engine
                                         pair.Key.GetHashCode() < other.Key.GetHashCode()
                                             ? (Attacker: pair.Key, Target: other.Key)
                                             : (Attacker: other.Key, Target: pair.Key)))
-                                .Distinct() //Remove duplicates
-                                .ToList();
+                                 .Distinct(); //Remove duplicates
 
         foreach (var (basher, target) in HitEachother)
         {
@@ -236,13 +232,16 @@ public class Engine
         HazardCountdown--;
         var DangerCells = GameWorld.Layout.Where(cell => cell.Value.Construct is Danger);
 
-        foreach (var danger in DangerCells)
+        if (HazardCountdown == 4) //1 turn for danger to become spikes, can change
         {
-            GameWorld.Layout[danger.Key].Construct = Spike.Create(); //Danger => Spike
-
-            if (GameWorld.Layout[danger.Key].Player != null) //Kill Bots on new Spike
+            foreach (var danger in DangerCells)
             {
-                Kill(GameWorld.Layout[danger.Key].Player!);
+                GameWorld.Layout[danger.Key].Construct = Spike.Create(); //Danger => Spike
+
+                if (GameWorld.Layout[danger.Key].Player != null) //Kill Bots on new Spike
+                {
+                    Kill(GameWorld.Layout[danger.Key].Player!);
+                }
             }
         }
 
@@ -279,7 +278,7 @@ public class Engine
         foreach (var bot in AlivePlayers)
         {
             //Resets vision each turn, move to render function when making display outside of console later
-            bot.ScanCooldown -= 1;
+            bot.ScanCooldown = Math.Max(0, bot.ScanCooldown - 1);
             bot.LungeCooldown = Math.Max(0, bot.LungeCooldown - 1);
             if (bot.ScanCooldown == 0) { bot.Vision = 1; }
         }
@@ -306,7 +305,7 @@ public class Engine
         var Knockback = new Coordinate(-direction.X, -direction.Y);
         var EndPos = GoTheDistance(bot.Position, Knockback, movement);
 
-        if (GameWorld.Layout[EndPos].Construct is Spike) //I don't want to run TryGetcell again just to get cell, should do differently
+        if (GameWorld.Layout[EndPos].Construct is Spike)
         {
             Kill(bot);
             return;
@@ -320,8 +319,7 @@ public class Engine
         //Now removes every mention of the bot on the field
         foreach (var cell in GameWorld.Layout)
         {
-            if (cell.Value.Player == bot)
-                cell.Value.Player = null;
+            if (cell.Value.Player == bot) { cell.Value.Player = null; }
         }
 
         AlivePlayers.Remove(bot);
@@ -338,7 +336,7 @@ public class Engine
         int Movement = 1; //How far Lunge lunges
         var EndPos = GoTheDistance(bot.Position, decision.Direction!.Value, Movement);
 
-        if (GameWorld.Layout[EndPos].Construct is Spike) //Can jump over spikes, but not land on them
+        if (GameWorld.Layout[EndPos].Construct is Spike)
         {
             ToKill.Add(bot);
             return;
@@ -391,8 +389,7 @@ public class Engine
         //Remove bot from any tile
         foreach (var cell in GameWorld.Layout.Values)
         {
-            if (cell.Player == bot)
-                cell.Player = null;
+            if (cell.Player == bot) { cell.Player = null; }
         }
 
         //Assign to new tile
