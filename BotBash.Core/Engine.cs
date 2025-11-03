@@ -57,7 +57,7 @@ public class Engine
         if (!Initialized || State != GameState.Playing) { return; }
 
         BotDecisions();
-        BotMovement();
+        BotMovement();  //bots somehow somewhere can either walk INTO walls or off the board, also sometimes not all spawn
         BotBashes();
         WorldEdits();
         BotScan();
@@ -83,7 +83,7 @@ public class Engine
         var EmptyCells = GameWorld.Layout.Where(cell => cell.Value.Construct is Empty && cell.Value.Player == null).ToList();
         if (EmptyCells.Count < AlivePlayers.Count) { throw new Exception("Not enough empty cells to place all players!"); }
 
-        var RandomCells = EmptyCells.OrderBy(_ => Guid.NewGuid()).Take(AlivePlayers.Count).ToList();
+        var RandomCells = EmptyCells.OrderBy(_ => Guid.NewGuid()).Distinct().Take(AlivePlayers.Count).ToList();
 
         for (int i = 0; i < AlivePlayers.Count; i++)
         {
@@ -93,6 +93,7 @@ public class Engine
             AlivePlayers[i].ScanCooldown = 0;
             AlivePlayers[i].LungeCooldown = 0;
             AlivePlayers[i].Action = new BotAction();
+            Console.WriteLine($"Bot {AlivePlayers[i]} spawns at {RandomCells[i].Key}");
         }
     }
 
@@ -360,7 +361,7 @@ public class Engine
 
         for (int i = 1; i <= maxSteps; i++)
         {
-            var NextPos = new Coordinate(start.X + direction.X * i, start.Y + direction.Y * i);
+            var NextPos = new Coordinate(EndPos.X + direction.X, EndPos.Y + direction.Y);
 
             if (!TryGetCell(NextPos, out var cell)) { break; }
             if (cell.Construct is Wall) { break; } //your nose on the wall

@@ -60,23 +60,43 @@ document.getElementById("leaveBtn").addEventListener("click", async () => {
 
 
 function renderWorld(world) {
-    console.log("[Render] Rendering world", world);
+    const container = document.getElementById("world");
 
-    const grid = Array.from({ length: world.height }, () =>
-        Array(world.width).fill(".")
-    );
+    //Set grid size
+    container.style.setProperty("--grid-width", world.width);
+    container.style.setProperty("--grid-height", world.height);
 
+    //Clear previous cells
+    container.innerHTML = "";
+
+    //Create a map
+    const cellMap = {};
     for (const cell of world.cells) {
-        let symbol = ".";
-        if (cell.constructType === "Wall") symbol = "#";
-        else if (cell.constructType === "Spike") symbol = "S";
-        else if (cell.constructType === "Danger") symbol = "D";
-        else if (cell.hasPlayer) symbol = "P";
-
-        if (grid[cell.y - 1] && grid[cell.y - 1][cell.x - 1])
-            grid[cell.y - 1][cell.x - 1] = symbol;
+        cellMap[`${cell.x},${cell.y}`] = cell;
     }
 
-    document.getElementById("world").textContent =
-        grid.map(row => row.join(" ")).join("\n");
+    for (let y = 1; y <= world.height; y++) {
+        for (let x = 1; x <= world.width; x++) {
+            const cellDiv = document.createElement("div");
+            cellDiv.classList.add("cell");
+
+            const cell = cellMap[`${x},${y}`];
+
+            if (!cell) {
+                cellDiv.classList.add("empty");
+            } else if (cell.hasPlayer) {
+                cellDiv.classList.add("player");
+                cellDiv.textContent = "P";
+            } else {
+                switch (cell.constructType) {
+                    case "Wall": cellDiv.classList.add("wall"); cellDiv.textContent = "#"; break;
+                    case "Spike": cellDiv.classList.add("spike"); cellDiv.textContent = "S"; break;
+                    case "Danger": cellDiv.classList.add("danger"); cellDiv.textContent = "D"; break;
+                    default: cellDiv.classList.add("empty"); break;
+                }
+            }
+
+            container.appendChild(cellDiv);
+        }
+    }
 }

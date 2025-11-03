@@ -68,7 +68,7 @@ public class World
 
         while (true)
         {
-            var coord = new Coordinate(currentX, currentX);
+            var coord = new Coordinate(currentX, currentY);
 
             //Stop if tile is outside the game world
             if (!Layout.ContainsKey(coord)) { break; }
