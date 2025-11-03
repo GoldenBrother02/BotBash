@@ -100,8 +100,8 @@ public class Engine
     {
         foreach (var bot in AlivePlayers)
         {
-            var VisibleArea = GameWorld.GetVisibleArea(bot.Position, bot.Vision);
-            BotActions.Add(bot, bot.RunLogic(VisibleArea));
+            var VisibleInfo = GameWorld.GetVisibleInfo(bot.Position, bot.Vision);
+            BotActions.Add(bot, bot.RunLogic(VisibleInfo));
         }
     }
 

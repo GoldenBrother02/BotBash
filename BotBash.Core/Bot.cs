@@ -9,7 +9,7 @@ public interface IBot
     int ScanCooldown { get; set; }
     int LungeCooldown { get; set; }
 
-    Action RunLogic(HashSet<Coordinate> VisibleArea);
+    Action RunLogic(Dictionary<Coordinate, Cell> VisibleInfo);
 }
 
 public class TestBot : IBot
@@ -20,7 +20,7 @@ public class TestBot : IBot
     public int ScanCooldown { get; set; }
     public int LungeCooldown { get; set; }
 
-    public Action RunLogic(HashSet<Coordinate> VisibleArea)
+    public Action RunLogic(Dictionary<Coordinate, Cell> VisibleInfo)
     {
         return RandomAction();
         //Is called by the engine, runs whatever logic the player makes, and returns an action
@@ -61,7 +61,7 @@ public class ManualBot : IBot
     public int ScanCooldown { get; set; }
     public int LungeCooldown { get; set; }
 
-    public Action RunLogic(HashSet<Coordinate> VisibleArea)  //add an input here so players can manually control a bot
+    public Action RunLogic(Dictionary<Coordinate, Cell> VisibleInfo)  //add an input here so players can manually control a bot
     {
         return Action!.Wait();
     }

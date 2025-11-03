@@ -7,3 +7,4 @@
 [] better display
 [] ...
 [] Somehow allow players to input their bot code onto the deployed site to have a bot function off of that
+[] Every joining player needs their bot added to the game, spectators do not

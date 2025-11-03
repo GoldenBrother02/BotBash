@@ -22,7 +22,15 @@ public class World
                   .ToDictionary(k => new Coordinate(k.x, k.y), v => new Cell(null!, Randomise()));
     }
 
-    public HashSet<Coordinate> GetVisibleArea(Coordinate botPos, int viewRange)
+    public Dictionary<Coordinate, Cell> GetVisibleInfo(Coordinate botPos, int viewRange)
+    {
+        var Area = GetVisibleArea(botPos, viewRange);
+        var Info = new Dictionary<Coordinate, Cell>();
+        foreach (var tile in Area) { Info[tile] = Layout[tile]; }
+        return Info;
+    }
+
+    private HashSet<Coordinate> GetVisibleArea(Coordinate botPos, int viewRange)
     {
         var visibleTiles = new HashSet<Coordinate>();
 
