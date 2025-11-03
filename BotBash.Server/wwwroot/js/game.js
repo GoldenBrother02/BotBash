@@ -1,5 +1,6 @@
 const UrlParams = new URLSearchParams(window.location.search);
 const room = UrlParams.get("room");
+let currentRoom = "";
 const connection = new signalR.HubConnectionBuilder()
     .withUrl("/gamehub")
     .configureLogging(signalR.LogLevel.Information)
@@ -20,8 +21,9 @@ connection.on("WorldUpdated", (world) => {
 
 if (room === "Manual") {
     connection.start().then(() => {
-        connection.invoke("JoinRoom", "ManualRoom1");
-        connection.invoke("StartManualGame", "ManualRoom1").catch(err => console.error(err));
+        currentRoom = "ManualRoom1"
+        connection.invoke("JoinRoom", currentRoom);
+        connection.invoke("StartManualGame", currentRoom).catch(err => console.error(err));
     })
     document.getElementById("tickBtn").style.display = "block";
 
@@ -29,8 +31,10 @@ if (room === "Manual") {
 
 if (room === "Auto") {
     connection.start().then(() => {
-        connection.invoke("JoinRoom", "AutoRoom1");
-        connection.invoke("StartGame", "AutoRoom1").catch(err => console.error(err));
+
+        currentRoom = "AutoRoom1"
+        connection.invoke("JoinRoom", currentRoom);
+        connection.invoke("StartGame", currentRoom).catch(err => console.error(err));
     })
     document.getElementById("tickBtn").style.display = "none";
 }
