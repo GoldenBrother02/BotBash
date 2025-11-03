@@ -8,7 +8,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSignalR();
 
 builder.Services.AddSingleton<GameHub>();
-builder.Services.AddSingleton<EngineManager>();
 
 builder.Services.AddCors(options =>
 {
