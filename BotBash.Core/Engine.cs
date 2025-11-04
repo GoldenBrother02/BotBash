@@ -10,6 +10,7 @@ public enum GameState
 /// <summary>Calculates the logic of the game and keeps it running.</summary>
 public class Engine
 {
+    private readonly SemaphoreSlim _tickSemaphore = new SemaphoreSlim(1, 1);
     private World GameWorld { get; set; }
     private List<IBot> StartingPlayers { get; set; } //Could be used for a statistic?
     private List<IBot> AlivePlayers = [];
@@ -56,15 +57,19 @@ public class Engine
     {
         if (!Initialized || State != GameState.Playing) { return; }
 
-        BotDecisions();
-        BotMovement();  //bots somehow somewhere can either walk INTO walls or off the board, also sometimes not all spawn
-        BotBashes();
-        WorldEdits();
-        BotScan();
-        VictoryCheck();
+        if (!await _tickSemaphore.WaitAsync(0)) { return; } // another tick running
+        try
+        {
+            BotDecisions();
+            BotMovement();  //bots somehow somewhere can walk INTO walls and off the board, also sometimes not all spawn
+            BotBashes();
+            WorldEdits();
+            BotScan();
+            VictoryCheck();
 
-        BotActions.Clear();
-        Console.WriteLine($"Alive players: {AlivePlayers.Count}");
+            Console.WriteLine($"Alive players: {AlivePlayers.Count}");
+        }
+        finally { _tickSemaphore.Release(); }
 
         if (OnWorldUpdated != null) { await OnWorldUpdated(GameWorld); }
 
@@ -83,26 +88,34 @@ public class Engine
         var EmptyCells = GameWorld.Layout.Where(cell => cell.Value.Construct is Empty && cell.Value.Player == null).ToList();
         if (EmptyCells.Count < AlivePlayers.Count) { throw new Exception("Not enough empty cells to place all players!"); }
 
-        var RandomCells = EmptyCells.OrderBy(_ => Guid.NewGuid()).Distinct().Take(AlivePlayers.Count).ToList();
+        var AvailableCells = EmptyCells.OrderBy(_ => Guid.NewGuid()).ToList();
 
         for (int i = 0; i < AlivePlayers.Count; i++)
         {
-            MoveBotToTile(AlivePlayers[i], RandomCells[i].Key);
+            var ChosenCell = AvailableCells[i];
+            var bot = AlivePlayers[i];
+
+            GameWorld.Layout[ChosenCell.Key].Player = bot; //Manually place bot in stead of MoveToTile
+            bot.Position = ChosenCell.Key;
 
             AlivePlayers[i].Vision = 1;
             AlivePlayers[i].ScanCooldown = 0;
             AlivePlayers[i].LungeCooldown = 0;
-            AlivePlayers[i].Action = new BotAction();
-            Console.WriteLine($"Bot {AlivePlayers[i]} spawns at {RandomCells[i].Key}");
+            AlivePlayers[i].GameAction = new BotAction();
+            Console.WriteLine($"Bot {AlivePlayers[i]} spawns at {ChosenCell.Key}");
+
+            AvailableCells.Remove(ChosenCell);
         }
     }
 
     private void BotDecisions()
     {
+        BotActions.Clear();
         foreach (var bot in AlivePlayers)
         {
             var VisibleInfo = GameWorld.GetVisibleInfo(bot.Position, bot.Vision);
-            BotActions.Add(bot, bot.RunLogic(VisibleInfo));
+            var Action = bot.RunLogic(VisibleInfo) ?? bot.GameAction!.Wait();
+            BotActions[bot] = Action;
         }
     }
 
@@ -117,7 +130,9 @@ public class Engine
             if (Decision.Type is ActionType.Move)
             {
                 var NextPos = bot.Position + Decision.Direction!.Value;
-                NewPositions.Add(bot, NextPos);
+
+                if (!GameWorld.IsInBounds(NextPos)) { NewPositions.Add(bot, bot.Position); } //Stay in bounds
+                else { NewPositions.Add(bot, NextPos); }
             }
         }
 
@@ -315,17 +330,6 @@ public class Engine
         MoveBotToTile(bot, EndPos);
     }
 
-    private void Kill(IBot bot)
-    {
-        //Now removes every mention of the bot on the field
-        foreach (var cell in GameWorld.Layout)
-        {
-            if (cell.Value.Player == bot) { cell.Value.Player = null; }
-        }
-
-        AlivePlayers.Remove(bot);
-    }
-
     private void DoBash(IBot bot, Action decision, Dictionary<IBot, Coordinate> Bashed)
     {
         var BashedCell = bot.Position + decision.Direction!.Value;
@@ -355,6 +359,36 @@ public class Engine
         Bashed[bot] = BashedCell; //Basher Bashed Target
     }
 
+    private void MoveBotToTile(IBot bot, Coordinate pos)
+    {
+        if (!AlivePlayers.Contains(bot)) { return; }
+        if (!GameWorld.Layout.ContainsKey(pos)) { return; }
+
+        var Destination = GameWorld.Layout[pos];
+
+        if (Destination.Construct is Wall) { return; }
+
+        if (GameWorld.Layout.TryGetValue(bot.Position, out var currentCell))
+        {
+            if (currentCell.Player == bot) { currentCell.Player = null; }
+        }
+
+        //Assign to new tile
+        GameWorld.Layout[pos].Player = bot;
+        bot.Position = pos;
+    }
+
+    private void Kill(IBot bot)
+    {
+        //Now removes every mention of the bot on the field
+        foreach (var cell in GameWorld.Layout)
+        {
+            if (cell.Value.Player == bot) { cell.Value.Player = null; }
+        }
+
+        AlivePlayers.Remove(bot);
+    }
+
     private Coordinate GoTheDistance(Coordinate start, Coordinate direction, int maxSteps)
     {
         var EndPos = start;
@@ -381,20 +415,5 @@ public class Engine
         }
         cell = null!;
         return false;
-    }
-
-    private void MoveBotToTile(IBot bot, Coordinate pos)
-    {
-        if (!AlivePlayers.Contains(bot)) return;
-
-        //Remove bot from any tile
-        foreach (var cell in GameWorld.Layout.Values)
-        {
-            if (cell.Player == bot) { cell.Player = null; }
-        }
-
-        //Assign to new tile
-        GameWorld.Layout[pos].Player = bot;
-        bot.Position = pos;
     }
 }

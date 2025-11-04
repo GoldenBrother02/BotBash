@@ -4,7 +4,7 @@ namespace BotBash.Core;
 public interface IBot
 {
     Coordinate Position { get; set; }
-    BotAction? Action { get; set; }
+    BotAction? GameAction { get; set; }
     int Vision { get; set; }
     int ScanCooldown { get; set; }
     int LungeCooldown { get; set; }
@@ -15,7 +15,7 @@ public interface IBot
 public class TestBot : IBot
 {
     public Coordinate Position { get; set; }
-    public BotAction? Action { get; set; }
+    public BotAction? GameAction { get; set; }
     public int Vision { get; set; }
     public int ScanCooldown { get; set; }
     public int LungeCooldown { get; set; }
@@ -43,12 +43,12 @@ public class TestBot : IBot
 
         return value switch
         {
-            1 => Action!.Move(randomDirection),
-            2 => Action!.Bash(randomDirection),
-            3 => Action!.Lunge(randomDirection),
-            4 => Action!.Scan(),
-            5 => Action!.Wait(),
-            _ => Action!.Wait(),
+            1 => GameAction!.Move(randomDirection),
+            2 => GameAction!.Bash(randomDirection),
+            3 => GameAction!.Lunge(randomDirection),
+            4 => GameAction!.Scan(),
+            5 => GameAction!.Wait(),
+            _ => GameAction!.Wait(),
         };
     }
 }
@@ -56,13 +56,13 @@ public class TestBot : IBot
 public class ManualBot : IBot
 {
     public Coordinate Position { get; set; }
-    public BotAction? Action { get; set; }
+    public BotAction? GameAction { get; set; }
     public int Vision { get; set; }
     public int ScanCooldown { get; set; }
     public int LungeCooldown { get; set; }
 
     public Action RunLogic(Dictionary<Coordinate, Cell> VisibleInfo)  //add an input here so players can manually control a bot
     {
-        return Action!.Wait();
+        return GameAction!.Wait();
     }
 }

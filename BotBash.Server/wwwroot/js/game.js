@@ -95,7 +95,6 @@ function renderWorld(world) {
                     default: cellDiv.classList.add("empty"); break;
                 }
             }
-
             container.appendChild(cellDiv);
         }
     }
