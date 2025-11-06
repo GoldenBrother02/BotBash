@@ -15,8 +15,8 @@ public class BotAction()
     {
         return direction switch
         {
-            Direction.Up => new Coordinate(0, 1),
-            Direction.Down => new Coordinate(0, -1),
+            Direction.Up => new Coordinate(0, -1),
+            Direction.Down => new Coordinate(0, 1),
             Direction.Left => new Coordinate(-1, 0),
             Direction.Right => new Coordinate(1, 0),
             _ => new Coordinate(0, 0)

@@ -56,13 +56,22 @@ public class TestBot : IBot
 public class ManualBot : IBot
 {
     public Coordinate Position { get; set; }
-    public BotAction? GameAction { get; set; }
     public int Vision { get; set; }
     public int ScanCooldown { get; set; }
     public int LungeCooldown { get; set; }
+    public Action? QueuedAction { get; set; }
+    public BotAction? GameAction { get; set; }
 
-    public Action RunLogic(Dictionary<Coordinate, Cell> VisibleInfo)  //add an input here so players can manually control a bot
+    public Action RunLogic(Dictionary<Coordinate, Cell> visibleInfo)
     {
-        return GameAction!.Wait();
+        if (QueuedAction != null)
+        {
+            var act = QueuedAction;
+            QueuedAction = null;
+            return act;
+        }
+
+        //No input → do nothing
+        return new BotAction().Wait();
     }
 }

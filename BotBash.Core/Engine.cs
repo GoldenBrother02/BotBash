@@ -340,6 +340,12 @@ public class Engine
     {
         int Movement = 1; //How far Lunge lunges
         var EndPos = GoTheDistance(bot.Position, decision.Direction!.Value, Movement);
+        var TargetPos = bot.Position + decision.Direction!.Value;
+
+        if (!GameWorld.IsInBounds(TargetPos)) { return; } //ALL BECAUSE I DIDN'T CHECK THE IMMEDIATE TILE NEXT TO ME
+        if (GameWorld.Layout[TargetPos].Construct is Wall) { return; }
+
+        if (!GameWorld.IsInBounds(EndPos) || GameWorld.Layout[EndPos].Construct is Wall) { return; }
 
         if (GameWorld.Layout[EndPos].Construct is Spike)
         {
@@ -356,7 +362,11 @@ public class Engine
 
         MoveBotToTile(bot, EndPos);
         var BashedCell = EndPos + decision.Direction!.Value; //Bash after Lunge movement
-        Bashed[bot] = BashedCell; //Basher Bashed Target
+
+        if (GameWorld.IsInBounds(BashedCell) && !(GameWorld.Layout[BashedCell].Construct is Wall))
+        {
+            Bashed[bot] = BashedCell; //Basher Bashed Target
+        }
     }
 
     private void MoveBotToTile(IBot bot, Coordinate pos)

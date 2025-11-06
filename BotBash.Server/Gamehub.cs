@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
+using BotBash.Core;
+using System.ComponentModel;
 
 namespace BotBash.Server;
 
@@ -48,6 +50,31 @@ public class GameHub : Hub
         if (Rooms.TryGetValue(roomName, out var engine))
         {
             await engine.Tick();
+        }
+    }
+
+    public async Task SendManualBotAction(string roomName, string action)
+    {
+        if (Rooms.TryGetValue(roomName, out var engine))
+        {
+            var bot = engine.ManualPlayer;
+            if (bot == null) return;
+
+            var act = new BotAction();
+
+            switch (action)
+            {
+                case "MoveUp": bot.QueuedAction = act.Move(Direction.Up); break;
+                case "MoveDown": bot.QueuedAction = act.Move(Direction.Down); break;
+                case "MoveLeft": bot.QueuedAction = act.Move(Direction.Left); break;
+                case "MoveRight": bot.QueuedAction = act.Move(Direction.Right); break;
+                case "LungeUp": bot.QueuedAction = act.Lunge(Direction.Up); break;
+                case "LungeDown": bot.QueuedAction = act.Lunge(Direction.Down); break;
+                case "LungeLeft": bot.QueuedAction = act.Lunge(Direction.Left); break;
+                case "LungeRight": bot.QueuedAction = act.Lunge(Direction.Right); break;
+                case "Scan": bot.QueuedAction = act.Scan(); break;
+                default: bot.QueuedAction = act.Wait(); break;
+            }
         }
     }
 }
