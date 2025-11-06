@@ -71,7 +71,7 @@ public class ManualBot : IBot
             return act;
         }
 
-        //No input → do nothing
+        //No input = do nothing
         return new BotAction().Wait();
     }
 }

@@ -21,7 +21,7 @@ public class Action
 
         if (type == ActionType.Scan || type == ActionType.Wait) //Scan/Wait don't use direction
         {
-            Direction = new Coordinate(0, 0); //I could also check if direction still has a value and throw error but that seems unnecessary
+            Direction = new Coordinate(0, 0);
             return;
         }
 

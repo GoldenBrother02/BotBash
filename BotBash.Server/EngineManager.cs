@@ -16,7 +16,6 @@ public class EngineManager
     {
         HubContext = hubContext;
         RoomName = roomName;
-
     }
 
     public async Task StartMatchAsync()
@@ -28,19 +27,9 @@ public class EngineManager
         //Hook into world updates
         Motor.OnWorldUpdated = async (updatedWorld) =>
         {
-            Console.WriteLine("[DEBUG] Sending world update to clients...");
-
-            try
-            {
-                var serial = updatedWorld.ToSerializable();
-                var json = System.Text.Json.JsonSerializer.Serialize(serial);
-                Console.WriteLine($"[DEBUG] JSON length: {json.Length}");
-                await HubContext.Clients.Group(RoomName).SendAsync("WorldUpdated", serial);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("[ERROR] Serializing world: " + ex.Message);
-            }
+            var serial = updatedWorld.ToSerializable();
+            var json = System.Text.Json.JsonSerializer.Serialize(serial);
+            await HubContext.Clients.Group(RoomName).SendAsync("WorldUpdated", serial);
         };
         _ = Task.Run(async () => await Motor.Start());
     }
@@ -57,28 +46,17 @@ public class EngineManager
 
         Motor.OnWorldUpdated = async (updatedWorld) =>
         {
-            try
-            {
-                var serial = updatedWorld.ToSerializable();
-                await HubContext.Clients.Group(RoomName).SendAsync("WorldUpdated", serial);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("[ERROR] Serializing world: " + ex.Message);
-            }
+            var serial = updatedWorld.ToSerializable();
+            await HubContext.Clients.Group(RoomName).SendAsync("WorldUpdated", serial);
         };
 
         Motor.InitialiseGame();
         await HubContext.Clients.Group(RoomName).SendAsync("WorldUpdated", Game.ToSerializable());
     }
 
-
     public async Task Tick()
     {
-        if (Motor != null)
-        {
-            await Motor.GameTick();
-        }
+        if (Motor != null) { await Motor.GameTick(); }
         else { throw new Exception("Game not started"); }
     }
 }

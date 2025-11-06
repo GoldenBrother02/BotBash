@@ -11,7 +11,7 @@ public enum Direction
 /// <summary>A class defining the scope of a Bot's actions.</summary>
 public class BotAction()
 {
-    private Coordinate Translate(Direction direction)
+    private static Coordinate Translate(Direction direction)
     {
         return direction switch
         {

@@ -22,43 +22,65 @@ public class World
                   .ToDictionary(k => new Coordinate(k.x, k.y), v => new Cell(null!, Randomise()));
     }
 
-    public Dictionary<Coordinate, Cell> GetVisibleInfo(Coordinate botPos, int viewRange)
+    private static IEntity Randomise()
     {
-        var Area = GetVisibleArea(botPos, viewRange);
+        var RNG = new Random();
+        var Weight = 20; //% chance
+
+        if (RNG.Next(1, 101) <= Weight) //1 - 100 RNG
+        {
+            return Wall.Create();
+        }
+        return Empty.Create();
+    }
+
+    public bool IsWalkable(Coordinate Coord)
+    {
+        if (!Layout.ContainsKey(Coord)) { return false; }
+        var cell = Layout[Coord];
+        return cell.Construct is Empty;
+    }
+
+    public bool IsInBounds(Coordinate Pos)
+    => Pos.X >= 1 && Pos.X <= Width && Pos.Y >= 1 && Pos.Y <= Height;
+
+    public Dictionary<Coordinate, Cell> GetVisibleInfo(Coordinate BotPos, int ViewRange)
+    {
+        var Area = GetVisibleArea(BotPos, ViewRange);
         var Info = new Dictionary<Coordinate, Cell>();
         foreach (var tile in Area) { Info[tile] = Layout[tile]; }
         return Info;
     }
 
-    private HashSet<Coordinate> GetVisibleArea(Coordinate botPos, int viewRange)
+    private HashSet<Coordinate> GetVisibleArea(Coordinate BotPos, int ViewRange)
     {
-        var visibleTiles = new HashSet<Coordinate>();
+        var VisibleTiles = new HashSet<Coordinate>();
 
         //Iterate over diamond-shaped area using Manhattan distance
-        for (int offsetX = -viewRange; offsetX <= viewRange; offsetX++)
+        for (int offsetX = -ViewRange; offsetX <= ViewRange; offsetX++)
         {
-            int maxOffsetY = viewRange - Math.Abs(offsetX); //Diamond shape means X + Y <= viewrange
-            for (int offsetY = -maxOffsetY; offsetY <= maxOffsetY; offsetY++)
+            int MaxOffsetY = ViewRange - Math.Abs(offsetX); //Diamond shape means X + Y <= viewrange
+            for (int offsetY = -MaxOffsetY; offsetY <= MaxOffsetY; offsetY++)
             {
                 //Only check the outer tiles, the function will go over every tile regardless and this removes extra loops over the same tiles
-                if (Math.Abs(offsetX) + Math.Abs(offsetY) == viewRange)
+                if (Math.Abs(offsetX) + Math.Abs(offsetY) == ViewRange)
                 {
-                    var targetTile = new Coordinate(botPos.X + offsetX, botPos.Y + offsetY);
-                    CastLine(botPos, targetTile, visibleTiles);
+                    var TargetTile = new Coordinate(BotPos.X + offsetX, BotPos.Y + offsetY);
+                    CastLine(BotPos, TargetTile, VisibleTiles);
                 }
             }
         }
-        return visibleTiles;
+        return VisibleTiles;
     }
 
-    //Cast a line of sight from startTile to targetTile, stopping at walls
+    //Cast a line of sight from StartTile to TargetTile, stopping at walls
     //Bresenhem's line algorythm
-    private void CastLine(Coordinate startTile, Coordinate targetTile, HashSet<Coordinate> visibleTiles)
+    private void CastLine(Coordinate StartTile, Coordinate TargetTile, HashSet<Coordinate> VisibleTiles)
     {
-        int currentX = startTile.X;
-        int currentY = startTile.Y;
-        int endX = targetTile.X;
-        int endY = targetTile.Y;
+        int currentX = StartTile.X;
+        int currentY = StartTile.Y;
+        int endX = TargetTile.X;
+        int endY = TargetTile.Y;
 
         int Xdistance = Math.Abs(endX - currentX);   //Total horizontal distance to target
         int Ydistance = Math.Abs(endY - currentY);   //Total vertical distance to target
@@ -68,15 +90,15 @@ public class World
 
         while (true)
         {
-            var coord = new Coordinate(currentX, currentY);
+            var Coord = new Coordinate(currentX, currentY);
 
             //Stop if tile is outside the game world
-            if (!Layout.ContainsKey(coord)) { break; }
+            if (!Layout.ContainsKey(Coord)) { break; }
 
-            visibleTiles.Add(coord);
+            VisibleTiles.Add(Coord);
 
             //Stop line if wall
-            if (Layout[coord].Construct is Wall) { break; }
+            if (Layout[Coord].Construct is Wall) { break; }
 
             //Stop if reach end
             if (currentX == endX && currentY == endY) { break; }
@@ -97,38 +119,23 @@ public class World
         }
     }
 
-    private static IEntity Randomise() //Current rando will create scenarios where players cannot reach eachother
-    {
-        var RNG = new Random();
-        var Weight = 20; //% chance
-
-        if (RNG.Next(1, 101) <= Weight) //1 - 100 RNG
-        {
-            return Wall.Create();
-        }
-        return Empty.Create();
-    }
-
-    public bool IsInBounds(Coordinate pos)
-    => pos.X >= 1 && pos.X <= Width && pos.Y >= 1 && pos.Y <= Height;
-
     public void RenderConsoleWorld()
     {
-        int minX = Layout.Keys.Min(p => p.X);
-        int maxX = Layout.Keys.Max(p => p.X);
-        int minY = Layout.Keys.Min(p => p.Y);
-        int maxY = Layout.Keys.Max(p => p.Y);
-        char symbol;
+        int MinX = Layout.Keys.Min(p => p.X);
+        int MaxX = Layout.Keys.Max(p => p.X);
+        int MinY = Layout.Keys.Min(p => p.Y);
+        int MaxY = Layout.Keys.Max(p => p.Y);
+        char Symbol;
 
         Console.SetCursorPosition(0, 0);
 
-        for (int y = minY; y <= maxY; y++)
+        for (int y = MinY; y <= MaxY; y++)
         {
-            for (int x = minX; x <= maxX; x++)
+            for (int x = MinX; x <= MaxX; x++)
             {
-                var coord = new Coordinate(x, y);
+                var Coord = new Coordinate(x, y);
 
-                if (!Layout.TryGetValue(coord, out var cell))
+                if (!Layout.TryGetValue(Coord, out var cell))
                 {
                     Console.Write("  ");
                     continue;
@@ -136,17 +143,17 @@ public class World
 
                 //Tiles take priority
                 if (cell.Construct is Wall)
-                    symbol = '#';
+                    Symbol = '#';
                 else if (cell.Construct is Spike)
-                    symbol = 'S';
+                    Symbol = 'S';
                 else if (cell.Construct is Danger)
-                    symbol = 'D';
+                    Symbol = 'D';
                 else if (cell.Construct is Empty && cell.Player != null)
-                    symbol = 'P'; //Player only on empty tile
+                    Symbol = 'P'; //Player only on empty tile
                 else
-                    symbol = '.';
+                    Symbol = '.';
 
-                Console.Write(symbol + " ");
+                Console.Write(Symbol + " ");
             }
             Console.WriteLine();
         }
@@ -159,12 +166,12 @@ public class World
     {
         var cells = Layout.Select(pair =>
         {
-            var coord = pair.Key;
+            var Coord = pair.Key;
             var cell = pair.Value;
 
             return new SerializableCell(
-                coord.X,
-                coord.Y,
+                Coord.X,
+                Coord.Y,
                 cell.Construct.GetType().Name,   //"Wall", "Spike", "Empty", ...
                 cell.Player != null              //true if bot, false if not
             );
@@ -182,5 +189,5 @@ public record SerializableWorld
 (
     int Width,
     int Height,
-    List<SerializableCell> Cells
+    List<SerializableCell> cells
 );

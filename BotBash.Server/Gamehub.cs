@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.SignalR;
 using BotBash.Core;
-using System.ComponentModel;
 
 namespace BotBash.Server;
 
@@ -14,55 +13,46 @@ public class GameHub : Hub
         HubContext = hubContext;
     }
 
-    public async Task JoinRoom(string roomName)
+    public async Task JoinRoom(string RoomName)
     {
-        await Groups.AddToGroupAsync(Context.ConnectionId, roomName);
-        Console.WriteLine($"Client {Context.ConnectionId} joined room {roomName}");
+        await Groups.AddToGroupAsync(Context.ConnectionId, RoomName);
+        Console.WriteLine($"Client {Context.ConnectionId} joined room {RoomName}");
     }
 
-    public async Task LeaveRoom(string roomName)
+    public async Task LeaveRoom(string RoomName)
     {
-        await Groups.RemoveFromGroupAsync(Context.ConnectionId, roomName);
-        await Clients.Caller.SendAsync("LeftRoom", roomName);
-        Console.WriteLine($"Client {Context.ConnectionId} left room {roomName}");
+        await Groups.RemoveFromGroupAsync(Context.ConnectionId, RoomName);
+        await Clients.Caller.SendAsync("LeftRoom", RoomName);
+        Console.WriteLine($"Client {Context.ConnectionId} left room {RoomName}");
     }
 
-    public async Task StartGame(string roomName)
+    public async Task StartGame(string RoomName)
     {
-        if (!Rooms.ContainsKey(roomName))
-        {
-            Rooms[roomName] = new EngineManager(HubContext, roomName);
-        }
-        await Rooms[roomName].StartMatchAsync();
+        if (!Rooms.ContainsKey(RoomName)) { Rooms[RoomName] = new EngineManager(HubContext, RoomName); }
+        await Rooms[RoomName].StartMatchAsync();
     }
 
-    public async Task StartManualGame(string roomName)
+    public async Task StartManualGame(string RoomName)
     {
-        if (!Rooms.ContainsKey(roomName))
-        {
-            Rooms[roomName] = new EngineManager(HubContext, roomName);
-        }
-        await Rooms[roomName].StartManualGame();
+        if (!Rooms.ContainsKey(RoomName)) { Rooms[RoomName] = new EngineManager(HubContext, RoomName); }
+        await Rooms[RoomName].StartManualGame();
     }
 
-    public async Task Tick(string roomName)
+    public async Task Tick(string RoomName)
     {
-        if (Rooms.TryGetValue(roomName, out var engine))
-        {
-            await engine.Tick();
-        }
+        if (Rooms.TryGetValue(RoomName, out var engine)) { await engine.Tick(); }
     }
 
-    public async Task SendManualBotAction(string roomName, string action)
+    public async Task SendManualBotAction(string RoomName, string Action)
     {
-        if (Rooms.TryGetValue(roomName, out var engine))
+        if (Rooms.TryGetValue(RoomName, out var engine))
         {
             var bot = engine.ManualPlayer;
             if (bot == null) return;
 
             var act = new BotAction();
 
-            switch (action)
+            switch (Action)
             {
                 case "MoveUp": bot.QueuedAction = act.Move(Direction.Up); break;
                 case "MoveDown": bot.QueuedAction = act.Move(Direction.Down); break;
