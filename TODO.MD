@@ -1,5 +1,6 @@
 [X] Multiple Rooms 
-[] deploy with docker
+[X] deploy with docker and koyeb
+[] deployed version keeps showing the alert popup even after someone restarted, fix that
 [] implement player sight in manual mode
 [] Distinction between player and spectator for sight in manual mode
 [X] Manual controls for bot
