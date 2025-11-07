@@ -6,65 +6,22 @@
     <title>Manual Bot Control</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
     <link rel="stylesheet" href="css/style.css">
-    <style>
-        #controls button {
-            margin: 5px;
-            padding: 10px;
-            font-size: 16px;
-        }
-
-        #world {
-            display: grid;
-            grid-template-columns: repeat(var(--grid-width), 30px);
-            grid-gap: 2px;
-        }
-
-        .cell {
-            width: 30px;
-            height: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .wall {
-            background: #333;
-            color: #fff;
-        }
-
-        .player {
-            background: #0a0;
-            color: #fff;
-        }
-
-        .spike {
-            background: red;
-            color: #fff;
-        }
-
-        .danger {
-            background: orange;
-            color: #000;
-        }
-
-        .empty {
-            background: #eee;
-        }
-    </style>
 </head>
 
 <body>
     <h1>Manual Bot Control</h1>
     <div id="world"></div>
 
-    <div id="controls">
+    <button id="LeaveBtn">Leave Room</button>
+
+    <div id="Controls">
         <button data-action="MoveUp">↑</button>
         <button data-action="MoveDown">↓</button>
         <button data-action="MoveLeft">←</button>
         <button data-action="MoveRight">→</button>
         <button data-action="Scan">Scan</button>
         <button data-action="Wait">Wait</button>
-        <button id="tickBtn">Next Tick</button>
+
         <h3>Lunge</h3>
         <button data-action="LungeUp">Up</button>
         <button data-action="LungeDown">Down</button>
@@ -72,91 +29,13 @@
         <button data-action="LungeRight">Right</button>
     </div>
 
-    <div>
-
+    <div id="GameOverModal" style="display: none;">
+        <h2 id="GameOverMessage"></h2>
+        <button id="RestartBtn">Restart</button>
+        <button id="HomeBtn">Return to Home</button>
     </div>
 
-    <script>
-        const UrlParams = new URLSearchParams(window.location.search);
-        const room = UrlParams.get("room") || "ManualRoom1"; // default room
-        let currentRoom = room;
-
-        const connection = new signalR.HubConnectionBuilder()
-            .withUrl("/gamehub")
-            .configureLogging(signalR.LogLevel.Information)
-            .build();
-
-        connection.on("Connected", msg => console.log("Connected:", msg));
-
-        connection.on("WorldUpdated", world => {
-            renderWorld(world);
-        });
-
-        connection.start().then(async () => {
-            await connection.invoke("JoinRoom", currentRoom);
-            await connection.invoke("StartManualGame", currentRoom);
-        });
-
-        // Handle control buttons
-        document.querySelectorAll("#controls button[data-action]").forEach(btn => {
-            btn.addEventListener("click", async () => {
-                const action = btn.dataset.action;
-                try {
-                    // Send action to server
-                    await connection.invoke("SendManualBotAction", currentRoom, action);
-
-                    // Immediately tick the game so action is applied
-                    await connection.invoke("Tick", currentRoom);
-                } catch (err) {
-                    console.error(err);
-                }
-            });
-        });
-
-        document.getElementById("tickBtn").addEventListener("click", async () => {
-            try {
-                await connection.invoke("Tick", currentRoom);
-            } catch (err) {
-                console.error(err);
-            }
-        });
-
-        function renderWorld(world) {
-            const container = document.getElementById("world");
-            container.style.setProperty("--grid-width", world.width);
-            container.innerHTML = "";
-
-            const cellMap = {};
-            for (const cell of world.cells) {
-                cellMap[`${cell.x},${cell.y}`] = cell;
-            }
-
-            for (let y = 1; y <= world.height; y++) {
-                for (let x = 1; x <= world.width; x++) {
-                    const cellDiv = document.createElement("div");
-                    cellDiv.classList.add("cell");
-
-                    const cell = cellMap[`${x},${y}`];
-
-                    if (!cell) {
-                        cellDiv.classList.add("empty");
-                    } else if (cell.hasPlayer) {
-                        cellDiv.classList.add("player");
-                        cellDiv.textContent = "P";
-                    } else {
-                        switch (cell.constructType) {
-                            case "Wall": cellDiv.classList.add("wall"); cellDiv.textContent = "#"; break;
-                            case "Spike": cellDiv.classList.add("spike"); cellDiv.textContent = "S"; break;
-                            case "Danger": cellDiv.classList.add("danger"); cellDiv.textContent = "D"; break;
-                            default: cellDiv.classList.add("empty"); break;
-                        }
-                    }
-
-                    container.appendChild(cellDiv);
-                }
-            }
-        }
-    </script>
+    <script src="/js/manual.js"></script>
 </body>
 
 </html>

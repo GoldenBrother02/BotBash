@@ -11,15 +11,15 @@
     <h1>Welcome to BotBash!</h1>
     <p>Choose a room to join:</p>
 
-    <button id="joinManual">Manual</button>
-    <button id="joinAuto">Automatic</button>
+    <button id="JoinManual">Manual</button>
+    <button id="JoinAuto">Automatic</button>
 
     <script>
-        document.getElementById("joinManual").addEventListener("click", () => {
-            window.location.href = "/manual.html?room=Manual";
+        document.getElementById("JoinManual").addEventListener("click", () => {
+            window.location.href = "/manual.html?Room=Manual";
         });
-        document.getElementById("joinAuto").addEventListener("click", () => {
-            window.location.href = "/game.html?room=Auto";
+        document.getElementById("JoinAuto").addEventListener("click", () => {
+            window.location.href = "/game.html?Room=Auto";
         });
     </script>
 </body>

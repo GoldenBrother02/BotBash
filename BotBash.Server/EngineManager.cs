@@ -10,6 +10,8 @@ public class EngineManager
     private World? Game { get; set; }
     private List<IBot>? Bots { get; set; }
     private Engine? Motor { get; set; }
+    private bool IsRunning { get; set; } = false;
+    private bool HasEnded { get; set; } = false;
     public ManualBot? ManualPlayer { get; private set; }
 
     public EngineManager(IHubContext<GameHub> hubContext, string roomName)
@@ -18,8 +20,14 @@ public class EngineManager
         RoomName = roomName;
     }
 
+    public bool CanRestart() => HasEnded || !IsRunning;
+
     public async Task StartMatchAsync()
     {
+        if (IsRunning) { return; }
+        IsRunning = true;
+        HasEnded = false;
+
         Game = new World(10, 10);
         Bots = new List<IBot> { new TestBot(), new TestBot() };
         Motor = new Engine(Game, Bots);
@@ -31,11 +39,24 @@ public class EngineManager
             var json = System.Text.Json.JsonSerializer.Serialize(serial);
             await HubContext.Clients.Group(RoomName).SendAsync("WorldUpdated", serial);
         };
-        _ = Task.Run(async () => await Motor.Start());
+
+        //Hook into game end
+        Motor.OnGameEnded = async (result) =>
+        {
+            await HubContext.Clients.Group(RoomName).SendAsync("GameEnded", result);
+            IsRunning = false;
+            HasEnded = true;
+        };
+
+        _ = Task.Run(async () => { await Motor.Start(); });
     }
 
     public async Task StartManualGame()
     {
+        if (IsRunning) { return; }
+        IsRunning = true;
+        HasEnded = false;
+
         Game = new World(10, 10);
         var manualBot = new ManualBot();
         var testBot = new TestBot();
@@ -44,10 +65,21 @@ public class EngineManager
 
         ManualPlayer = manualBot; //Save reference for Hub
 
+
+        //Hook into world updates
         Motor.OnWorldUpdated = async (updatedWorld) =>
         {
             var serial = updatedWorld.ToSerializable();
             await HubContext.Clients.Group(RoomName).SendAsync("WorldUpdated", serial);
+        };
+
+
+        //Hook into game end
+        Motor.OnGameEnded = async (result) =>
+        {
+            await HubContext.Clients.Group(RoomName).SendAsync("GameEnded", result);
+            IsRunning = false;
+            HasEnded = true;
         };
 
         Motor.InitialiseGame();
@@ -56,7 +88,9 @@ public class EngineManager
 
     public async Task Tick()
     {
+        if (!IsRunning) { throw new Exception("No game started"); }
+        if (HasEnded) { throw new Exception("Game has ended"); }
         if (Motor != null) { await Motor.GameTick(); }
-        else { throw new Exception("Game not started"); }
+        else { throw new Exception("Engine not started"); }
     }
 }

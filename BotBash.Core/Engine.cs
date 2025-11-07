@@ -12,7 +12,6 @@ public class Engine
 {
     private readonly SemaphoreSlim _tickSemaphore = new SemaphoreSlim(1, 1);
     private World GameWorld { get; set; }
-    private List<IBot> StartingPlayers { get; set; } //Could be used for a statistic?
     private List<IBot> AlivePlayers = [];
     private Dictionary<IBot, Action> BotActions = [];
     private GameState State;
@@ -20,12 +19,12 @@ public class Engine
     private int HazardCountdown = 5;
 
     public Func<World, Task>? OnWorldUpdated;
+    public Func<string, Task>? OnGameEnded;
 
     public Engine(World gameworld, List<IBot> players)
     {
         GameWorld = gameworld;
-        StartingPlayers = players;
-        AlivePlayers = new List<IBot>(players);
+        AlivePlayers = players;
     }
 
     public async Task Start()
@@ -38,9 +37,6 @@ public class Engine
             await GameTick();
             await Task.Delay(500); //2 updates per second
         }
-
-        if (State is GameState.Victory) { Console.WriteLine("Winner"); } // *_-_x*[TODO]*x_-_*
-        if (State is GameState.Draw) { Console.WriteLine("Draw"); } //      *_-_x*[TODO]*x_-_*
     }
 
     public async Task GameTick()
@@ -62,9 +58,6 @@ public class Engine
         finally { _tickSemaphore.Release(); }
 
         if (OnWorldUpdated != null) { await OnWorldUpdated(GameWorld); }
-
-        if (State is GameState.Victory) { Console.WriteLine("Winner"); } // *_-_x*[TODO]*x_-_*
-        if (State is GameState.Draw) { Console.WriteLine("Draw"); } //      *_-_x*[TODO]*x_-_*
     }
 
     public void InitialiseGame()
@@ -148,8 +141,12 @@ public class Engine
             {
                 //Bot stays in place if hitting wall
                 if (cell.Construct is Wall) { NewPositions[pos.Key] = pos.Key.Position; }
-
                 if (cell.Construct is Spike) { ToKill.Add(pos.Key); }
+                if (cell.Player != null && cell.Player != pos.Key)
+                {
+                    ToKill.Add(pos.Key);
+                    ToKill.Add(cell.Player);
+                }
             }
         }
 
@@ -310,11 +307,13 @@ public class Engine
         if (AlivePlayers.Count == 1)
         {
             State = GameState.Victory;
-
+            var Winner = AlivePlayers.First();
+            OnGameEnded?.Invoke($"Victory: {Winner.GetType().Name}");
         }
         if (AlivePlayers.Count == 0)
         {
             State = GameState.Draw;
+            OnGameEnded?.Invoke("Draw");
         }
     }
 

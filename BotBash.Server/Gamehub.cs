@@ -29,13 +29,17 @@ public class GameHub : Hub
     public async Task StartGame(string RoomName)
     {
         if (!Rooms.ContainsKey(RoomName)) { Rooms[RoomName] = new EngineManager(HubContext, RoomName); }
-        await Rooms[RoomName].StartMatchAsync();
+
+        var Manager = Rooms[RoomName];
+        if (Manager.CanRestart()) { await Manager.StartMatchAsync(); }
     }
 
     public async Task StartManualGame(string RoomName)
     {
         if (!Rooms.ContainsKey(RoomName)) { Rooms[RoomName] = new EngineManager(HubContext, RoomName); }
-        await Rooms[RoomName].StartManualGame();
+
+        var Manager = Rooms[RoomName];
+        if (Manager.CanRestart()) { await Manager.StartManualGame(); }
     }
 
     public async Task Tick(string RoomName)

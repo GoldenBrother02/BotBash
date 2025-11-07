@@ -1,51 +1,46 @@
 const UrlParams = new URLSearchParams(window.location.search);
 const Room = UrlParams.get("Room");
 const Modal = document.getElementById("GameOverModal");
-const Msg = document.getElementById("GameOverMessage");
+const Msg = Modal.querySelector("#GameOverMessage");
 const Connection = new signalR.HubConnectionBuilder()
     .withUrl("/gamehub")
     .configureLogging(signalR.LogLevel.Information)
     .build();
 
-
-let CurrentRoom = "";
-
+let CurrentRoom = Room;
 
 
-Connection.on("Connected", (msg) => {
-    console.log("[SignalR] Connected event:", msg);
-});
 
-Connection.on("WorldUpdated", (world) => {
-    console.log("[SignalR] WorldUpdated event received:", world);
+Connection.on("Connected", msg => console.log("Connected:", msg));
+
+Connection.on("WorldUpdated", world => {
     RenderWorld(world);
 });
 
 Connection.on("GameEnded", (result) => {
-    Msg.textContent = result.includes("Victory") ? result : "It's a draw!";
-    Modal.style.display = "flex";
+    console.log("Game ended:", result);
+
+    if (Modal) {
+        Msg.textContent = result.includes("Victory") ? result : "It's a draw!";
+        Modal.style.display = "flex";
+    }
+});
+
+Connection.start().then(async () => {
+    await Connection.invoke("JoinRoom", CurrentRoom).catch(err => console.error("JoinRoom failed:", err));
+    await Connection.invoke("StartManualGame", CurrentRoom).catch(err => console.error(err));
 });
 
 
 
-if (Room === "Manual") {
-    Connection.start().then(() => {
-        CurrentRoom = "ManualRoom1"
-        Connection.invoke("JoinRoom", CurrentRoom).catch(err => console.error("JoinRoom failed:", err));
-        Connection.invoke("StartManualGame", CurrentRoom).catch(err => console.error(err));
-    })
-}
+document.querySelectorAll("#Controls button[data-action]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+        const Action = btn.dataset.action;
 
-if (Room === "Auto") {
-    Connection.start().then(() => {
-
-        CurrentRoom = "AutoRoom1"
-        Connection.invoke("JoinRoom", CurrentRoom).catch(err => console.error("JoinRoom failed:", err));
-        Connection.invoke("StartGame", CurrentRoom).catch(err => console.error(err));
-    })
-}
-
-
+        await Connection.invoke("SendManualBotAction", CurrentRoom, Action).catch(err => console.error("Manual Action failed:", err));
+        await Connection.invoke("Tick", CurrentRoom).catch(err => console.error("Tick failed:", err));
+    });
+});
 
 document.getElementById("LeaveBtn").addEventListener("click", async () => {
     await Connection.invoke("LeaveRoom", CurrentRoom).catch(err => console.error("LeaveRoom failed:", err));
@@ -62,7 +57,7 @@ document.getElementById("HomeBtn").addEventListener("click", async () => {
 document.getElementById("RestartBtn").addEventListener("click", async () => {
     Modal.style.display = "none";
 
-    await Connection.invoke("StartGame", CurrentRoom).catch(err => console.error(err));
+    await Connection.invoke("StartManualGame", CurrentRoom).catch(err => console.error(err));
 });
 
 

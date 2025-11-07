@@ -11,10 +11,14 @@
 <body>
     <h2>BotBash Live</h2>
     <div id="world"></div>
-    <button id="tickBtn">Next Tick</button>
-    <button id="leaveBtn">Leave Room</button>
+    <button id="LeaveBtn">Leave Room</button>
 
-    <!-- Include the external JS file -->
+    <div id="GameOverModal" style="display: none;">
+        <h2 id="GameOverMessage"></h2>
+        <button id="RestartBtn">Restart</button>
+        <button id="HomeBtn">Return to Home</button>
+    </div>
+
     <script src="/js/game.js"></script>
 </body>
 
