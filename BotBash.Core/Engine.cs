@@ -1,12 +1,5 @@
 namespace BotBash.Core;
 
-public enum GameState
-{
-    Playing,
-    Draw,
-    Victory,
-}
-
 /// <summary>Calculates the logic of the game and keeps it running.</summary>
 public class Engine
 {
@@ -14,7 +7,7 @@ public class Engine
     private World GameWorld { get; set; }
     private List<IBot> AlivePlayers = [];
     private Dictionary<IBot, Action> BotActions = [];
-    private GameState State;
+    private bool Playing = false;
     private bool Initialized = false;
     private int HazardCountdown = 5;
 
@@ -32,7 +25,7 @@ public class Engine
         InitialiseGame();
         Console.Clear();
 
-        while (State is GameState.Playing)
+        while (Playing)
         {
             await GameTick();
             await Task.Delay(500); //2 updates per second
@@ -41,7 +34,7 @@ public class Engine
 
     public async Task GameTick()
     {
-        if (!Initialized || State != GameState.Playing) { return; }
+        if (!Initialized || !Playing) { return; }
 
         if (!await _tickSemaphore.WaitAsync(0)) { return; } //Another tick running
         try
@@ -66,7 +59,7 @@ public class Engine
         Initialized = true;
 
         GameWorld.InitialiseRandom();
-        State = GameState.Playing;
+        Playing = true;
 
         var EmptyCells = GameWorld.Layout.Where(cell => cell.Value.Construct is Empty && cell.Value.Player == null)
                                          .Select(empty => empty.Key)
@@ -82,7 +75,7 @@ public class Engine
         {
             //Empty cells not already taken
             var ValidChoices = EmptyCells.Except(PlacedPositions)
-                                         .Where(cell =>  //Don't like this bit but it auto indents
+                                         .Where(cell =>
                                          {
                                              var TempPositions = new HashSet<Coordinate>(PlacedPositions) { cell };
                                              return AreAllPlayersConnected(TempPositions);
@@ -243,10 +236,8 @@ public class Engine
             {
                 GameWorld.Layout[danger.Key].Construct = Spike.Create(); //Danger => Spike
 
-                if (GameWorld.Layout[danger.Key].Player != null) //Kill Bots on new Spike
-                {
-                    Kill(GameWorld.Layout[danger.Key].Player!);
-                }
+                //Kill Bots on new Spike
+                if (GameWorld.Layout[danger.Key].Player != null) { Kill(GameWorld.Layout[danger.Key].Player!); }
             }
         }
 
@@ -298,7 +289,7 @@ public class Engine
     {
         foreach (var bot in AlivePlayers)
         {
-            //Resets vision each turn, move to render function when making display outside of console later
+            //Resets vision each turn, move to render function when making manual display later(?)
             bot.ScanCooldown = Math.Max(0, bot.ScanCooldown - 1);
             bot.LungeCooldown = Math.Max(0, bot.LungeCooldown - 1);
             if (bot.ScanCooldown == 0) { bot.Vision = 1; }
@@ -306,13 +297,13 @@ public class Engine
 
         if (AlivePlayers.Count == 1)
         {
-            State = GameState.Victory;
+            Playing = false;
             var Winner = AlivePlayers.First();
             OnGameEnded?.Invoke($"Victory: {Winner.GetType().Name}");
         }
         if (AlivePlayers.Count == 0)
         {
-            State = GameState.Draw;
+            Playing = false;
             OnGameEnded?.Invoke("Draw");
         }
     }

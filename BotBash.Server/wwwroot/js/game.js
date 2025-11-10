@@ -26,6 +26,12 @@ Connection.on("GameEnded", (result) => {
     Modal.style.display = "flex";
 });
 
+Connection.on("GameRestarted", () => {
+    console.log("[SignalR] GameRestarted event received");
+    Modal.style.display = "none";
+    Msg.textContent = "";
+});
+
 
 
 if (Room === "Manual") {
@@ -38,7 +44,6 @@ if (Room === "Manual") {
 
 if (Room === "Auto") {
     Connection.start().then(() => {
-
         CurrentRoom = "AutoRoom1"
         Connection.invoke("JoinRoom", CurrentRoom).catch(err => console.error("JoinRoom failed:", err));
         Connection.invoke("StartGame", CurrentRoom).catch(err => console.error(err));

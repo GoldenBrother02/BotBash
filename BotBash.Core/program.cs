@@ -2,7 +2,7 @@ namespace BotBash.Core;
 
 class Program
 {
-    static async Task Main()
+    static async Task Main() //unused rn
     {
         var world = new World(width: 10, height: 10);
 

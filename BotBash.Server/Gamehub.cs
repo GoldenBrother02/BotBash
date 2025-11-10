@@ -31,7 +31,11 @@ public class GameHub : Hub
         if (!Rooms.ContainsKey(RoomName)) { Rooms[RoomName] = new EngineManager(HubContext, RoomName); }
 
         var Manager = Rooms[RoomName];
-        if (Manager.CanRestart()) { await Manager.StartMatchAsync(); }
+        if (Manager.CanRestart())
+        {
+            await Clients.Group(RoomName).SendAsync("GameRestarted");
+            await Manager.StartMatchAsync();
+        }
     }
 
     public async Task StartManualGame(string RoomName)
@@ -39,7 +43,11 @@ public class GameHub : Hub
         if (!Rooms.ContainsKey(RoomName)) { Rooms[RoomName] = new EngineManager(HubContext, RoomName); }
 
         var Manager = Rooms[RoomName];
-        if (Manager.CanRestart()) { await Manager.StartManualGame(); }
+        if (Manager.CanRestart())
+        {
+            await Clients.Group(RoomName).SendAsync("GameRestarted");
+            await Manager.StartManualGame();
+        }
     }
 
     public async Task Tick(string RoomName)

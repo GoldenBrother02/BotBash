@@ -14,6 +14,9 @@ public class World
         Layout = [];
     }
 
+    public bool IsInBounds(Coordinate Pos)
+    => Pos.X >= 1 && Pos.X <= Width && Pos.Y >= 1 && Pos.Y <= Height;
+
     public void InitialiseRandom()
     {
         Layout = (from x in Enumerable.Range(1, Width)
@@ -40,9 +43,6 @@ public class World
         var cell = Layout[Coord];
         return cell.Construct is Empty;
     }
-
-    public bool IsInBounds(Coordinate Pos)
-    => Pos.X >= 1 && Pos.X <= Width && Pos.Y >= 1 && Pos.Y <= Height;
 
     public Dictionary<Coordinate, Cell> GetVisibleInfo(Coordinate BotPos, int ViewRange)
     {

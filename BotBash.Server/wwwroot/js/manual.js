@@ -31,6 +31,12 @@ Connection.start().then(async () => {
     await Connection.invoke("StartManualGame", CurrentRoom).catch(err => console.error(err));
 });
 
+Connection.on("GameRestarted", () => {
+    console.log("[SignalR] GameRestarted event received");
+    Modal.style.display = "none";
+    Msg.textContent = "";
+});
+
 
 
 document.querySelectorAll("#Controls button[data-action]").forEach(btn => {

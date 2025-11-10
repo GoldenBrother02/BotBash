@@ -88,7 +88,3 @@ button {
     background-color: black;
     color: #0f0;
 }
-
-button :hover {
-    background-color: rgb(50, 50, 50);
-}
